@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>🛸 Jagannatha SciFi Pipeline — Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0e1a;
+    --panel: #141a2e;
+    --border: #2a3356;
+    --gold: #f2c14e;
+    --green: #4ade80;
+    --red: #f87171;
+    --text: #e6e9f5;
+    --muted: #8e95b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: radial-gradient(ellipse at top, #1a1f3a 0%, var(--bg) 60%);
+    color: var(--text);
+    padding: 32px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+    color: var(--gold);
+  }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .card .value { font-size: 26px; font-weight: 600; margin-top: 6px; }
+  .card .value.tier { font-size: 18px; color: var(--gold); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+  tr:last-child td { border-bottom: none; }
+  .section-title { font-size: 14px; color: var(--gold); margin: 28px 0 10px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 16px; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    background: rgba(74, 222, 128, 0.15);
+    color: var(--green);
+  }
+  .footer { margin-top: 32px; color: var(--muted); font-size: 12px; text-align: center; }
+  .refresh-btn {
+    background: var(--gold);
+    color: #1a1306;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <h1>🛸 JAGANNATHA SCIFI PIPELINE — DASHBOARD</h1>
+  <div class="subtitle">Sacred meets Sci-Fi · Digital Builders · <span id="now"></span> <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button></div>
+
+  <div class="grid" id="summaryCards"></div>
+
+  <div class="section-title">💰 Recent Runs (Cost Log)</div>
+  <div id="runsTableWrap"><div class="empty">Loading…</div></div>
+
+  <div class="section-title">📁 Run Artifacts (data/runs/)</div>
+  <div id="runFilesWrap"><div class="empty">Loading…</div></div>
+
+  <div class="footer">jagannatha-scifi-pipeline · ashishgupta.dev · JAI JAGANNATH! 🙏</div>
+
+<script>
+function fmtUsd(n) { return '$' + Number(n || 0).toFixed(2); }
+function fmtDate(iso) { try { return new Date(iso).toLocaleString(); } catch { return iso; } }
+
+async function loadAll() {
+  document.getElementById('now').textContent = new Date().toLocaleString();
+  await Promise.all([loadCostLog(), loadRunFiles()]);
+}
+
+async function loadCostLog() {
+  const cardsEl = document.getElementById('summaryCards');
+  const tableEl = document.getElementById('runsTableWrap');
+  try {
+    const res = await fetch('/api/cost-log');
+    const log = await res.json();
+    const runs = log.runs || [];
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthRuns = runs.filter((r) => new Date(r.timestamp) >= monthStart);
+    const monthTotal = monthRuns.reduce((s, r) => s + (r.total || 0), 0);
+    const allTimeTotal = runs.reduce((s, r) => s + (r.total || 0), 0);
+    const avgPerRun = runs.length ? allTimeTotal / runs.length : 0;
+
+    cardsEl.innerHTML = `
+      <div class="card"><div class="label">Total Runs</div><div class="value">${runs.length}</div></div>
+      <div class="card"><div class="label">Runs This Month</div><div class="value">${monthRuns.length}</div></div>
+      <div class="card"><div class="label">Spend This Month</div><div class="value">${fmtUsd(monthTotal)}</div></div>
+      <div class="card"><div class="label">Spend All-Time</div><div class="value">${fmtUsd(allTimeTotal)}</div></div>
+      <div class="card"><div class="label">Avg Cost / Run</div><div class="value">${fmtUsd(avgPerRun)}</div></div>
+    `;
+
+    if (!runs.length) {
+      tableEl.innerHTML = '<div class="empty">No runs logged yet — run `npm run generate` to produce the first entry.</div>';
+      return;
+    }
+
+    const recent = runs.slice(-10).reverse();
+    tableEl.innerHTML = `
+      <table>
+        <thead><tr><th>Timestamp</th><th>Total Cost</th><th>Providers Used</th><th>Exports</th></tr></thead>
+        <tbody>
+          ${recent.map((r) => `
+            <tr>
+              <td>${fmtDate(r.timestamp)}</td>
+              <td>${fmtUsd(r.total)}</td>
+              <td>${Object.keys(r.breakdown || {}).join(', ') || '—'}</td>
+              <td>${(r.exports || []).join(', ') || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    cardsEl.innerHTML = `<div class="empty">Could not load cost log: ${err.message}</div>`;
+    tableEl.innerHTML = '';
+  }
+}
+
+async function loadRunFiles() {
+  const el = document.getElementById('runFilesWrap');
+  try {
+    const res = await fetch('/api/runs');
+    const files = await res.json();
+    if (!files.length) {
+      el.innerHTML = '<div class="empty">No per-run artifact files in data/runs/ yet.</div>';
+      return;
+    }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>File</th><th>Status</th></tr></thead>
+        <tbody>
+          ${files.map((f) => `<tr><td>${f}</td><td><span class="pill">found</span></td></tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    el.innerHTML = `<div class="empty">Could not load run files: ${err.message}</div>`;
+  }
+}
+
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>

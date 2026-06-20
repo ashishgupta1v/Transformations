@@ -1,0 +1,118 @@
+{
+  "name": "error-handler-workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "error-trigger",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "workflow-name",
+              "name": "workflowName",
+              "value": "={{$json.workflow.name}}",
+              "type": "string"
+            },
+            {
+              "id": "failed-node",
+              "name": "failedNode",
+              "value": "={{$json.execution.lastNodeExecuted}}",
+              "type": "string"
+            },
+            {
+              "id": "error-message",
+              "name": "errorMessage",
+              "value": "={{$json.execution.error.message}}",
+              "type": "string"
+            },
+            {
+              "id": "execution-url",
+              "name": "executionUrl",
+              "value": "={{$json.execution.url}}",
+              "type": "string"
+            },
+            {
+              "id": "failed-at",
+              "name": "failedAt",
+              "value": "={{$now.toISO()}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "format-error",
+      "name": "Format Error Details",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/={{$env.WHATSAPP_PHONE_ID}}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer ={{$env.WHATSAPP_TOKEN}}" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "messaging_product", "value": "whatsapp" },
+            { "name": "to", "value": "={{$env.WHATSAPP_NOTIFY_NUMBER}}" },
+            { "name": "type", "value": "text" },
+            {
+              "name": "text",
+              "value": "={{ JSON.stringify({ body: \"⚠️ JAGANNATHA PIPELINE FAILED\\n\\nWorkflow: \" + $json.workflowName + \"\\nFailed node: \" + $json.failedNode + \"\\nError: \" + $json.errorMessage + \"\\nAt: \" + $json.failedAt + \"\\n\\n🙏 Check logs on the Oracle VM for full detail.\" }) }}"
+            }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      },
+      "id": "notify-whatsapp-error",
+      "name": "Notify via WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [560, 200]
+    },
+    {
+      "parameters": {
+        "command": "mkdir -p /home/opc/jagannatha-pipeline/logs && echo \"[{{$json.failedAt}}] workflow=\\\"{{$json.workflowName}}\\\" node=\\\"{{$json.failedNode}}\\\" error=\\\"{{$json.errorMessage}}\\\"\" >> /home/opc/jagannatha-pipeline/logs/n8n-errors.log"
+      },
+      "id": "log-error-file",
+      "name": "Log Error to File",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [560, 400]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [[{ "node": "Format Error Details", "type": "main", "index": 0 }]]
+    },
+    "Format Error Details": {
+      "main": [[
+        { "node": "Notify via WhatsApp", "type": "main", "index": 0 },
+        { "node": "Log Error to File", "type": "main", "index": 0 }
+      ]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": ["jagannath", "video-pipeline", "error-handling"],
+  "meta": {
+    "instanceId": "jagannatha-pipeline-v1"
+  }
+}

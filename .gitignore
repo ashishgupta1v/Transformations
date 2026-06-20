@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Generated assets (regenerated every run)
+temp/
+output/
+assets/*.mp4
+assets/*.mov
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Cost & run-state data (kept locally, not versioned)
+data/cost-log.json
+data/runs/
+data/.cache/
+
+# n8n local data
+n8n/.n8n/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Test coverage
+coverage/
+
+# OAuth/token cache
+.tokens.json

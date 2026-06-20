@@ -1,0 +1,48 @@
+{
+  "name": "jagannatha-scifi-pipeline",
+  "version": "1.0.0",
+  "description": "AI-powered Sacred SciFi Video Generation Pipeline — Shree Jagannatha Temple Puri",
+  "main": "src/index.js",
+  "author": "Ashish Gupta <ashish@digitalbuilders.in>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "generate": "node src/index.js generate",
+    "publish": "node src/index.js publish",
+    "test-apis": "node scripts/test-apis.js",
+    "cost-report": "node src/index.js cost-report",
+    "schedule": "node src/index.js schedule",
+    "admin": "node admin/server.js",
+    "dashboard": "node monitoring/server.js",
+    "test": "jest tests/",
+    "lint": "eslint src/ admin/ scripts/ --fix",
+    "setup": "bash scripts/setup.sh",
+    "deploy": "bash scripts/deploy.sh"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/s3-request-presigner": "^3.600.0",
+    "axios": "^1.6.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.19.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "form-data": "^4.0.0",
+    "fs-extra": "^11.2.0",
+    "googleapis": "^140.0.1",
+    "node-cron": "^3.0.3",
+    "ora": "^5.4.1",
+    "twitter-api-v2": "^1.17.2",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

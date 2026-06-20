@@ -1,0 +1,171 @@
+# .github/workflows/deploy.yml
+# GitHub Actions — Auto deploy to Oracle Cloud on push
+
+name: 🛸 Deploy Jagannatha Pipeline to Oracle Cloud
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_pipeline:
+        description: 'Run video pipeline after deploy?'
+        required: true
+        default: 'false'
+        type: choice
+        options: ['true', 'false']
+
+env:
+  PROJECT_DIR: /home/opc/jagannatha-pipeline
+  NODE_VERSION: '20'
+
+jobs:
+  # ── JOB 1: LINT & TEST ──────────────────────────
+  test:
+    name: 🧪 Lint & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint --if-present
+
+      - name: Run tests
+        run: npm test --if-present
+        env:
+          NODE_ENV: test
+
+  # ── JOB 2: DEPLOY ───────────────────────────────
+  deploy:
+    name: 🚀 Deploy to Oracle Cloud
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+
+      - name: Add Oracle VM to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.ORACLE_VM_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Oracle VM
+        run: |
+          ssh opc@${{ secrets.ORACLE_VM_IP }} << 'ENDSSH'
+            set -e
+            echo "🚀 Starting deployment..."
+
+            # Navigate to project
+            cd ${{ env.PROJECT_DIR }}
+
+            # Pull latest code
+            git pull origin main
+
+            # Install/update dependencies
+            npm ci --production
+
+            # Restart n8n if needed
+            docker-compose restart n8n
+
+            echo "✅ Deployment complete!"
+            echo "📅 Deployed at: $(date '+%Y-%m-%d %H:%M:%S IST')"
+          ENDSSH
+
+      - name: Verify deployment
+        run: |
+          ssh opc@${{ secrets.ORACLE_VM_IP }} << 'ENDSSH'
+            cd ${{ env.PROJECT_DIR }}
+            echo "📊 Service status:"
+            docker-compose ps
+            echo "Node version: $(node --version)"
+            echo "✅ Verification complete"
+          ENDSSH
+
+  # ── JOB 3: TRIGGER PIPELINE (OPTIONAL) ──────────
+  run-pipeline:
+    name: 🎬 Run Video Pipeline
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: |
+      github.event.inputs.run_pipeline == 'true' ||
+      contains(github.event.head_commit.message, '[run-pipeline]')
+
+    steps:
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+
+      - name: Add Oracle VM to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.ORACLE_VM_IP }} >> ~/.ssh/known_hosts
+
+      - name: Trigger video pipeline
+        run: |
+          ssh opc@${{ secrets.ORACLE_VM_IP }} << 'ENDSSH'
+            cd ${{ env.PROJECT_DIR }}
+            echo "🎬 Starting Jagannatha SciFi Pipeline..."
+            nohup node src/index.js generate > logs/pipeline-$(date +%Y%m%d-%H%M%S).log 2>&1 &
+            echo "✅ Pipeline started in background (PID: $!)"
+            echo "📋 Monitor: tail -f logs/pipeline.log"
+          ENDSSH
+
+      - name: Notify pipeline started
+        run: |
+          echo "🎬 Jagannatha SciFi Pipeline triggered successfully!"
+          echo "🛸 Sacred transformation in progress..."
+          echo "🙏 JAI JAGANNATH!"
+
+  # ── JOB 4: IMPORT N8N WORKFLOW ──────────────────
+  import-n8n:
+    name: ⚙️ Import n8n Workflow
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: contains(github.event.head_commit.message, '[import-n8n]')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.ORACLE_SSH_PRIVATE_KEY }}
+
+      - name: Add Oracle VM to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.ORACLE_VM_IP }} >> ~/.ssh/known_hosts
+
+      - name: Import workflow to n8n
+        run: |
+          ssh opc@${{ secrets.ORACLE_VM_IP }} << 'ENDSSH'
+            cd ${{ env.PROJECT_DIR }}
+
+            # Import workflow via n8n CLI inside Docker
+            docker exec n8n n8n import:workflow \
+              --input=/workspace/n8n/workflows/main-pipeline.workflow.json
+
+            echo "✅ n8n workflow imported successfully"
+          ENDSSH
