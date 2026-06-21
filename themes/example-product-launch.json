@@ -1,0 +1,103 @@
+{
+  "id": "example-product-launch",
+  "displayName": "Nova Runner X1 — Sneaker Launch",
+  "subjectType": "product",
+  "language": "en",
+  "tagline": "NOVA X1 — STEP INTO THE FUTURE 👟⚡",
+  "author": "Your Brand Studio",
+  "bannerTitle": "NOVA X1 LAUNCH PIPELINE",
+  "baseImageUrl": "https://your-bucket.compat.objectstorage.region.oraclecloud.com/nova_x1_base.png",
+
+  "phases": {
+    "phase1": {
+      "name": "Studio Baseline",
+      "duration": 5,
+      "provider": "runway",
+      "prompt": "Clean studio product shot, single white sneaker rotating slowly on a reflective black pedestal, soft rim lighting, minimal background, premium commercial photography, 24fps, ultra-realistic, shallow depth of field",
+      "negativePrompt": "blur, cartoon, low quality, cluttered background"
+    },
+    "phase2": {
+      "name": "Tech Transformation",
+      "duration": 10,
+      "provider": "kling",
+      "prompt": "PRODUCT TECH TRANSFORMATION: sneaker surface dissolves into glowing circuit-board patterns, sole splits open revealing pulsing blue energy core, laces become fiber-optic strands of light, holographic specs and stats orbit the shoe, particle effects burst outward, camera pushes in dramatically, cinematic commercial sci-fi epic",
+      "negativePrompt": "ugly, distorted, cartoon, low quality, morphing artifacts"
+    },
+    "phase3": {
+      "name": "Hero Reveal",
+      "duration": 5,
+      "provider": "pika",
+      "prompt": "Energy settles back into the shoe leaving a subtle glowing trim, camera pulls back to a wide hero shot, logo and tagline fade in cleanly, premium studio lighting returns, confident final product reveal",
+      "negativePrompt": "abrupt, jarring, low quality"
+    }
+  },
+
+  "audio": {
+    "ambient": {
+      "name": "Studio Ambient",
+      "prompt": "Subtle premium studio ambience, soft whoosh as camera glides, light synth pad, minimal percussion ticks, clean commercial sound design",
+      "duration": 15,
+      "volume": 1.0,
+      "promptInfluence": 0.3
+    },
+    "transformation": {
+      "name": "Tech Transformation",
+      "prompt": "Electric energy charge-up, circuit activation crackle, deep bass synth riser, glass-like chime accents, futuristic UI beep flourishes, big bass drop at the reveal",
+      "duration": 15,
+      "volume": 0.85,
+      "promptInfluence": 0.5
+    },
+    "music": {
+      "name": "Cinematic Brand Score",
+      "prompt": "[Minimal piano and pad intro] [Building electronic percussion and synth layers] [Big drop with driving bass and brass stabs for the transformation] [Clean confident outro chord for the hero reveal] modern commercial cinematic",
+      "duration": 15,
+      "volume": 0.65,
+      "instrumental": true
+    }
+  },
+
+  "overlay": {
+    "primaryText": "NOVA RUNNER X1",
+    "secondaryText": "Available Now ⚡",
+    "startTime": 13,
+    "endTime": 15,
+    "fadeIn": 0.5,
+    "fadeOut": 0.5
+  },
+
+  "platforms": {
+    "youtube": {
+      "title": "Nova Runner X1 — The Future of Running 👟⚡ Official Launch Film",
+      "description": "⚡👟 THE FUTURE OF RUNNING IS HERE ⚡👟\n\nIntroducing the Nova Runner X1 — engineered for speed, built for tomorrow.\n\n🔵 Adaptive energy-return sole\n💡 Fiber-optic lace lighting\n📊 Built-in performance tracking\n🚀 Available in 6 colorways\n\nNOVA X1 — STEP INTO THE FUTURE\n\nShop now at yourbrand.example.com\n\n#NovaX1 #SneakerLaunch #FutureOfRunning #ProductLaunch #TechSneakers",
+      "tags": ["NovaX1", "SneakerLaunch", "ProductLaunch", "Sneakers", "TechWear", "AIVideo"],
+      "categoryId": "22",
+      "privacy": "public",
+      "defaultLanguage": "en"
+    },
+    "shorts": {
+      "title": "Nova Runner X1 Reveal 👟⚡ #Shorts",
+      "description": "The future of running has arrived. #NovaX1 #Shorts #SneakerLaunch",
+      "tags": ["Shorts", "NovaX1", "SneakerLaunch", "TechSneakers"],
+      "categoryId": "22",
+      "privacy": "public"
+    },
+    "instagramReel": {
+      "caption": "⚡👟 THE FUTURE OF RUNNING ⚡👟\n\nNova Runner X1 — engineered for speed, built for tomorrow.\n\nAvailable now 🚀\n\n#NovaX1 #SneakerLaunch #FutureOfRunning #TechSneakers #ProductLaunch"
+    },
+    "twitter": {
+      "text": "⚡👟 The Nova Runner X1 just dropped. Engineered for speed, built for tomorrow.\n\nAvailable now 🚀\n\n#NovaX1 #SneakerLaunch #TechSneakers"
+    },
+    "facebook": {
+      "description": "⚡👟 THE FUTURE OF RUNNING IS HERE!\n\nThe Nova Runner X1 is engineered for speed and built for tomorrow. Available now in 6 colorways.\n\n#NovaX1 #SneakerLaunch #ProductLaunch"
+    },
+    "whatsapp": {
+      "liveText": "New {displayName} video is live!"
+    }
+  },
+
+  "notifications": {
+    "whatsappComplete": "✅ {displayName} video COMPLETE!\n⏱️ Time: {duration} mins\n📱 {exportCount} platform versions ready\n{tagline}",
+    "whatsappError": "❌ {displayName} pipeline FAILED\n📍 Stage: {stage}\n🐛 {error}\n\nCheck logs on the server.",
+    "whatsappLive": "👟⚡ New {displayName} video is live!\n\nFile ready: {path}\n{tagline}"
+  }
+}

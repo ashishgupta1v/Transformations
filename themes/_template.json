@@ -1,0 +1,105 @@
+{
+  "_comment": "Copy this file to themes/<your-theme-id>.json and fill in every field below. JSON has no comment syntax, so this _comment key is ignored by themeLoader.js — leave it or delete it, your choice. See themes/README.md for the full field reference.",
+
+  "id": "your-theme-id",
+  "displayName": "Human-readable name shown in banners, notifications, and the admin UI",
+  "subjectType": "deity | location | product | business | other",
+  "language": "en",
+  "tagline": "A short closing line used in notifications, e.g. an emoji sign-off",
+  "author": "Your name or studio",
+  "bannerTitle": "SHORT ALL-CAPS TITLE FOR THE CLI BANNER",
+  "baseImageUrl": "https://your-storage-bucket.example.com/base-image.png",
+
+  "phases": {
+    "phase1": {
+      "name": "Phase 1 — Baseline",
+      "duration": 5,
+      "provider": "runway",
+      "prompt": "Describe the starting scene in vivid, specific visual detail for the video generation model.",
+      "negativePrompt": "blur, cartoon, low quality"
+    },
+    "phase2": {
+      "name": "Phase 2 — Transformation",
+      "duration": 10,
+      "provider": "kling",
+      "prompt": "Describe the transformation/twist that happens to the subject from phase 1.",
+      "negativePrompt": "distorted, cartoon, low quality, morphing artifacts"
+    },
+    "phase3": {
+      "name": "Phase 3 — Resolution",
+      "duration": 5,
+      "provider": "pika",
+      "prompt": "Describe how the scene resolves or returns to its baseline state.",
+      "negativePrompt": "abrupt, jarring, low quality"
+    }
+  },
+
+  "audio": {
+    "ambient": {
+      "name": "Ambient / Baseline Audio",
+      "prompt": "Describe the ambient soundscape matching phase 1.",
+      "duration": 15,
+      "volume": 1.0,
+      "promptInfluence": 0.3
+    },
+    "transformation": {
+      "name": "Transformation Audio",
+      "prompt": "Describe the sound design for the transformation moment matching phase 2.",
+      "duration": 15,
+      "volume": 0.85,
+      "promptInfluence": 0.5
+    },
+    "music": {
+      "name": "Cinematic Score",
+      "prompt": "Describe the musical score arc across all three phases, e.g. [opening] [rising tension] [climax] [resolution].",
+      "duration": 15,
+      "volume": 0.65,
+      "instrumental": true
+    }
+  },
+
+  "overlay": {
+    "primaryText": "Primary on-screen text (e.g. in a local script/language). Leave empty string if not needed.",
+    "secondaryText": "Secondary on-screen text (e.g. English translation or tagline).",
+    "startTime": 13,
+    "endTime": 15,
+    "fadeIn": 0.5,
+    "fadeOut": 0.5
+  },
+
+  "platforms": {
+    "youtube": {
+      "title": "YouTube video title",
+      "description": "Full YouTube description, including hashtags. Use \\n for line breaks.",
+      "tags": ["tag1", "tag2", "tag3"],
+      "categoryId": "22",
+      "privacy": "public",
+      "defaultLanguage": "en"
+    },
+    "shorts": {
+      "title": "YouTube Shorts title",
+      "description": "Shorts description",
+      "tags": ["Shorts", "tag1"],
+      "categoryId": "22",
+      "privacy": "public"
+    },
+    "instagramReel": {
+      "caption": "Instagram Reel caption with hashtags."
+    },
+    "twitter": {
+      "text": "Tweet text with hashtags."
+    },
+    "facebook": {
+      "description": "Facebook video post description."
+    },
+    "whatsapp": {
+      "liveText": "New {displayName} video is live!"
+    }
+  },
+
+  "notifications": {
+    "whatsappComplete": "✅ {displayName} video COMPLETE!\n⏱️ Time: {duration} mins\n📱 {exportCount} platform versions ready\n{tagline}",
+    "whatsappError": "❌ {displayName} pipeline FAILED\n📍 Stage: {stage}\n🐛 {error}\n\nCheck logs on the server.",
+    "whatsappLive": "New {displayName} video is live!\n\nFile ready: {path}\n{tagline}"
+  }
+}

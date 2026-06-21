@@ -1,17 +1,19 @@
-# Jagannatha SciFi Video Pipeline — Technical Implementation Plan
+# SciFi Transformation Video Pipeline — Technical Implementation Plan
 
-**Project:** 🛸 Jagannatha SciFi Video Pipeline
+**Project:** 🛸 SciFi Transformation Video Pipeline — generic, theme-driven
 **Author:** Ashish Gupta — Digital Builders (ashishgupta.dev)
-**Status:** Code-complete, unit-tested, committed (`17b69f0`), not yet deployed
-**Last updated:** 2026-06-20
+**Status:** Code-complete, unit-tested, committed, not yet deployed
+**Last updated:** 2026-06-21
 
 ---
 
 ## 1. What This System Does
 
-A single command (`node src/index.js generate`) turns one static base image of Shree Jagannatha Temple Puri into a 15-second video that opens sacred (diyas, chariots, chanting), transforms into a sci-fi sequence (quantum portals, mechs, a Vimana spacecraft), then returns to sacred stillness — and then publishes that video, re-encoded per platform spec, to YouTube, YouTube Shorts, Instagram Reels, Twitter/X, Facebook, and a WhatsApp notification, in parallel, with per-platform failure isolation.
+A single command (`node src/index.js generate --theme <name>`) turns one static base image into a 15-second video that opens at a calm baseline, transforms into a dramatic sci-fi sequence, then resolves into a hero/closing shot — and then publishes that video, re-encoded per platform spec, to YouTube, YouTube Shorts, Instagram Reels, Twitter/X, Facebook, and a WhatsApp notification, in parallel, with per-platform failure isolation.
 
-It runs unattended on an Oracle Cloud Free Tier VM, triggered weekly by an n8n workflow, with GitHub Actions handling deploy-on-push.
+What the video actually depicts — a temple's Rath Yatra, a product launch, a city landmark, a brand campaign — is determined entirely by the **theme** named on the command line (`themes/<name>.json`, see `src/utils/themeLoader.js`). The engine code (video/audio generation, assembly, publishing) contains no subject-specific content; it only reads prompts, durations, overlay text, and platform copy out of whichever theme object was injected into it. `config/pipeline.config.js` holds everything engine-level (FFmpeg params, retry/poll tuning, platform resolution specs, cost estimates) and is shared by every theme.
+
+It runs unattended on an Oracle Cloud Free Tier VM (or any host), triggered weekly by an n8n workflow that's theme-aware, with GitHub Actions handling deploy-on-push.
 
 ---
 
@@ -21,26 +23,27 @@ Everything below exists in the repo, has been read end-to-end during this audit,
 
 | Layer | File | Responsibility |
 |---|---|---|
-| Entry point | `src/index.js` | CLI (`generate`, `assemble`, `publish`, `test-apis`, `cost-report`, `schedule`); orchestrates the full run; emits WhatsApp success/failure notification |
-| Video gen | `src/video/generator.js` | Runway Gen-3 (phase 1), Kling AI Pro (phase 2), Pika Labs (phase 3), optional Replicate 4K upscale; submit+poll pattern for all four providers |
-| Audio gen | `src/audio/generator.js` | ElevenLabs sound-generation (sacred + scifi SFX), Suno AI (music score); submit+poll for Suno, direct response for ElevenLabs |
-| Assembly | `src/assembly/assembler.js` | FFmpeg: download assets, mix 3 audio layers, concat 3 video phases + color grade + text overlay into a master file, export 6 platform-specific renditions |
-| Publishing | `src/publish/publisher.js` | YouTube + Shorts (googleapis OAuth2), Instagram Reels (Graph API container flow), Twitter/X (twitter-api-v2, real OAuth1.0a), Facebook (Graph API multipart), WhatsApp (Cloud API text notification) — all via `Promise.allSettled` |
-| Cost tracking | `src/utils/costTracker.js` | Per-run cost estimate logging to `data/cost-log.json`; month-to-date totals; nearest budget tier lookup |
+| Entry point | `src/index.js` | CLI (`generate`, `assemble`, `publish`, `list-themes`, `test-apis`, `cost-report`, `schedule`); resolves `--theme`/`DEFAULT_THEME`, loads it via `themeLoader`, injects it into every content-touching module, orchestrates the full run, emits WhatsApp success/failure notification |
+| Theme system | `src/utils/themeLoader.js` + `themes/*.json` | Loads, parses, and validates the subject-specific theme JSON for a run (`loadTheme`/`listThemes`); applies `BASE_IMAGE_URL_OVERRIDE` if set; throws a descriptive, list-of-available-themes error if no theme can be resolved. This is the layer that makes the whole pipeline subject-agnostic — see `themes/README.md` for the field reference |
+| Video gen | `src/video/generator.js` | Runway Gen-3 (phase 1), Kling AI Pro (phase 2), Pika Labs (phase 3), optional Replicate 4K upscale; submit+poll pattern for all four providers. Takes a `theme` in its constructor and reads phase prompts/durations/base image from it (`requireTheme()` guard if none injected) |
+| Audio gen | `src/audio/generator.js` | ElevenLabs sound-generation (ambient + transformation SFX via `generateAmbientAudio`/`generateTransformationAudio`), Suno AI music score (`generateMusicScore`); submit+poll for Suno, direct response for ElevenLabs. Theme-injected, same `requireTheme()` pattern |
+| Assembly | `src/assembly/assembler.js` | FFmpeg: download assets, mix 3 audio layers (theme-driven volumes), concat 3 video phases + color grade + theme-driven text overlay into a master file, export per-platform renditions. Theme-injected |
+| Publishing | `src/publish/publisher.js` | YouTube + Shorts (googleapis OAuth2), Instagram Reels (Graph API container flow), Twitter/X (twitter-api-v2, real OAuth1.0a), Facebook (Graph API multipart), WhatsApp (Cloud API text notification) — all via `Promise.allSettled`, all titles/descriptions/captions theme-driven. Theme-injected |
+| Cost tracking | `src/utils/costTracker.js` | Per-run cost estimate logging to `data/cost-log.json` (tagged with the theme id); month-to-date totals; nearest budget tier lookup |
 | Retry | `src/utils/retry.js` | Exponential-backoff wrapper used by every external API call |
 | Storage | `src/utils/storage.js` | Oracle Object Storage via AWS SDK S3-compatible client (real SigV4 signing, replacing a non-functional bearer-token stub) |
 | YouTube auth | `src/utils/youtubeAuth.js` | OAuth2 refresh-token flow; interactive first-time setup CLI; token validation for `test-apis` |
-| Scheduling | `src/utils/cronManager.js` | `node-cron` wrapper for local/fallback scheduling (Asia/Kolkata tz), independent of n8n |
-| Notifications | `src/notify/whatsapp.js` | Shared WhatsApp Cloud API sender used by both the pipeline and the publisher |
+| Scheduling | `src/utils/cronManager.js` | `node-cron` wrapper for local/fallback scheduling (Asia/Kolkata tz), independent of n8n; schedules a run for whichever theme was passed in |
+| Notifications | `src/notify/whatsapp.js` + `src/utils/template.js` | Shared WhatsApp Cloud API sender used by both the pipeline and the publisher; `template.js` is the tiny `{placeholder}` substitution helper that renders theme-defined notification strings (`{displayName}`, `{tagline}`, etc.) without a templating dependency |
 | Logging | `src/utils/logger.js` | Winston logger, used by every module |
-| Config | `config/pipeline.config.js` | Single source of truth: prompts, durations, audio volumes, FFmpeg params, platform specs, retry/poll tuning, cost estimates, budget tiers, storage config |
-| Admin UI | `admin/server.js` + `admin/public/` | Express API (`/api/pipeline/start`, `/api/pipeline/status`, `/api/costs`) with API-key auth; this is also what n8n's "Start Pipeline API" node calls |
-| Monitoring | `monitoring/server.js` + `monitoring/dashboard.html` | Zero-dependency HTTP server exposing `data/cost-log.json` and `data/runs/` as JSON for the dashboard |
-| Orchestration | `n8n/workflows/main-pipeline.workflow.json` | Weekly trigger → start pipeline → per-provider HTTP nodes → FFmpeg assemble → publish → WhatsApp notify |
-| Error handling | `n8n/workflows/error-handler-workflow.json` | n8n error trigger → format details → WhatsApp alert → log to file |
+| Config | `config/pipeline.config.js` | Engine-only source of truth, shared by every theme: FFmpeg params, platform resolution/bitrate/crop specs, retry/poll tuning, cost estimates, budget tiers, storage config. Subject-specific content (prompts, overlay text, platform copy) lives in `themes/*.json`, not here |
+| Admin UI | `admin/server.js` + `admin/public/` | Express API (`/api/pipeline/start`, `/api/pipeline/status`, `/api/costs`, `/api/themes`) with API-key auth; accepts an optional `theme` in the start request body, falling back to `DEFAULT_THEME`; this is also what n8n's "Start Pipeline API" node calls |
+| Monitoring | `monitoring/server.js` + `monitoring/dashboard.html` | Zero-dependency HTTP server exposing `data/cost-log.json` and `data/runs/` as JSON for the dashboard, including the theme each run used |
+| Orchestration | `n8n/workflows/main-pipeline.workflow.json` | Weekly trigger → start pipeline (theme parameter, falls back to `DEFAULT_THEME`) → per-provider HTTP nodes → FFmpeg assemble → publish → WhatsApp notify |
+| Error handling | `n8n/workflows/error-handler-workflow.json` | n8n error trigger → format details → WhatsApp alert → log to file (path built from `PIPELINE_DIR`) |
 | CI/CD | `.github/workflows/deploy.yml` | Lint+test → SSH deploy to Oracle VM → optional pipeline trigger → optional n8n workflow import |
-| Ops scripts | `scripts/setup.sh`, `scripts/deploy.sh`, `scripts/test-apis.js` | Oracle VM bootstrap, deploy helper, connectivity check across all 11 external services |
-| Tests | `tests/**/*.test.js` | Jest, 6 suites / 51 tests, all passing |
+| Ops scripts | `scripts/setup.sh`, `scripts/deploy.sh`, `scripts/test-apis.js` | Host VM bootstrap, deploy helper, connectivity check across all external services |
+| Tests | `tests/**/*.test.js` | Jest, 7 suites / 74 tests, all passing |
 
 **Bug found and fixed during testing:** `costTracker.getSummary()` had a reversed-array bug that made it always report the highest budget tier ("Pro") regardless of actual spend. Fixed; now correctly returns the smallest tier that covers month-to-date spend.
 
@@ -67,10 +70,10 @@ flowchart TB
     end
 
     subgraph AI["External AI Services"]
-        RUNWAY["Runway Gen-3 Turbo\n(Phase 1: sacred baseline)"]
+        RUNWAY["Runway Gen-3 Turbo\n(Phase 1: theme baseline)"]
         KLING["Kling AI Pro\n(Phase 2: scifi transform)"]
-        PIKA["Pika Labs\n(Phase 3: sacred return)"]
-        ELEVEN["ElevenLabs\n(sacred + scifi SFX)"]
+        PIKA["Pika Labs\n(Phase 3: theme resolution)"]
+        ELEVEN["ElevenLabs\n(ambient + transformation SFX)"]
         SUNO["Suno AI\n(music score)"]
         REPLICATE["Replicate\n(optional 4K upscale)"]
     end
@@ -139,7 +142,8 @@ sequenceDiagram
     participant CT as costTracker
     participant WA as WhatsApp
 
-    T->>Idx: runPipeline()
+    T->>Idx: runPipeline({theme})
+    Idx->>Idx: resolveThemeOption(theme) → loadTheme()
     Idx->>VG: generatePhase1()
     VG->>VG: POST Runway → poll until SUCCEEDED
     VG-->>Idx: { url: phase1.mp4 }
@@ -151,11 +155,11 @@ sequenceDiagram
     VG-->>Idx: { url: phase3.mp4 }
 
     par Parallel audio generation
-        Idx->>AG: generateSacredAudio()
-        AG-->>Idx: { url: file://sacred_audio.mp3 }
+        Idx->>AG: generateAmbientAudio()
+        AG-->>Idx: { url: file://ambient_audio.mp3 }
     and
-        Idx->>AG: generateSciFiAudio()
-        AG-->>Idx: { url: file://scifi_audio.mp3 }
+        Idx->>AG: generateTransformationAudio()
+        AG-->>Idx: { url: file://transformation_audio.mp3 }
     and
         Idx->>AG: generateMusicScore()
         AG->>AG: POST Suno → poll until SUCCESS
@@ -220,8 +224,8 @@ classDiagram
         +string phase1
         +string phase2
         +string phase3
-        +string sacredAudio
-        +string scifiAudio
+        +string ambientAudio
+        +string transformationAudio
         +string musicScore
     }
 
@@ -347,8 +351,8 @@ flowchart LR
         A["Weekly Schedule Trigger\n(cron)"] --> B["Start Pipeline API\n(POST :3000/api/pipeline/start)"]
         B --> C["Runway — Phase 1"]
         C --> D["Kling AI — SciFi Transform"]
-        D --> E1["ElevenLabs — Sacred Audio"]
-        D --> E2["ElevenLabs — SciFi Audio"]
+        D --> E1["ElevenLabs — Ambient Audio"]
+        D --> E2["ElevenLabs — Transformation Audio"]
         E1 --> F["FFmpeg — Assemble Master\n(executeCommand)"]
         E2 --> F
         F --> G["Publish All Platforms\n(executeCommand)"]
@@ -392,7 +396,7 @@ These are deliberate, documented trade-offs, not bugs — but they directly affe
 - **WhatsApp "Status" is actually a text notification**, not a real WhatsApp Status post — Meta's Cloud API has no public Status-posting endpoint. The current implementation sends a message to one configured number (`WHATSAPP_NOTIFY_NUMBER`).
 - **Kling and Pika have no public lightweight health-check endpoint**, so `scripts/test-apis.js` only validates that their API keys are *present*, not that they're *valid* — a bad Kling key won't surface until the first real Phase 2 generation call.
 - **Instagram publishing has a hard dependency on Oracle Object Storage** being configured (`ORACLE_S3_*` env vars) — without it, Instagram is the one platform that can't publish even though the others can.
-- **No base image is hosted yet.** `BASE_IMAGE_URL` defaults to a placeholder (`https://your-oracle-storage/jagannath_base.png`) — Phase 1 generation will fail until a real night Rath Yatra image is uploaded to Oracle Storage and the env var updated.
+- **No base image is hosted for a new theme until you provide one.** Each theme's `baseImageUrl` field (in `themes/<name>.json`) is a placeholder URL by default — Phase 1 generation will fail until you upload a real base image for that theme to Oracle Storage and update the field (or set `BASE_IMAGE_URL_OVERRIDE` for a one-off per-deployment swap without editing the theme file).
 - **Single-VM, single-run-at-a-time design** — there's no queue; a second `/api/pipeline/start` call while one is running is rejected with 409, which is correct for the current cadence but won't scale to multiple concurrent video requests.
 
 ---
@@ -417,16 +421,17 @@ In rough dependency order:
 1. **Push the repo to GitHub.** `git remote add origin <your-repo-url> && git push -u origin main` — nothing downstream (CI, deploy) works without a remote.
 2. **Provision the Oracle Cloud Free Tier VM** (ARM, 4 OCPU/24GB) and Object Storage bucket per `scripts/setup.sh`; note the VM's public IP.
 3. **Add GitHub secrets**: `ORACLE_SSH_PRIVATE_KEY`, `ORACLE_VM_IP` (Settings → Secrets → Actions) — this unblocks the Deploy job.
-4. **Host the base temple image** in Oracle Object Storage and set `BASE_IMAGE_URL` in `.env` — Phase 1 cannot run without this.
-5. **Collect and fill in all API keys** in `.env` (copy from `.env.example`; ~50 variables across Runway, Kling, Pika, ElevenLabs, Suno, Replicate, YouTube OAuth, Instagram/Facebook Graph, Twitter, WhatsApp Cloud, Oracle S3). Run `npm run test-apis` after each batch to confirm connectivity.
-6. **Run the YouTube OAuth first-time setup**: `node src/utils/youtubeAuth.js`, approve access, paste the refresh token into `.env`.
-7. **Apply for the platform permissions that gate publishing**: Instagram Reels + Facebook video publish both require Meta App Review for the relevant scopes; Twitter video upload requires Elevated/Pro API access. Budget lead time here — these are the most likely blockers.
-8. **Dry-run the pipeline with `--skip-publish`** (`node src/index.js generate --skip-publish`) to validate phases 1–3, audio, and assembly before risking a live multi-platform publish.
-9. **Import the n8n workflows** (`[import-n8n]` commit message, or manually via the n8n UI) and configure n8n credentials for each HTTP node.
-10. **Activate the n8n weekly trigger** once a full dry-run and one full live run have both succeeded.
-11. **Set up basic VM monitoring** — at minimum, log rotation for `logs/` and a disk-space alert (Oracle Free Tier storage is capped at 20GB and video assets accumulate in `temp/`/`output/`).
-12. **Decide on the admin-state persistence gap (§8)** before relying on the admin UI for anything beyond manual one-off runs.
+4. **Decide which theme(s) you're running.** Use the included `jagannatha-rathyatra` theme as-is, or copy `themes/_template.json` to author a new one (deity, location, product, business — see `themes/README.md`). Set `DEFAULT_THEME` in `.env` if you want runs without an explicit `--theme` flag to resolve to a specific one.
+5. **Host each theme's base image** in Oracle Object Storage and set its `baseImageUrl` field in the theme JSON (or `BASE_IMAGE_URL_OVERRIDE` in `.env` for a one-off swap) — Phase 1 cannot run for a theme without this.
+6. **Collect and fill in all API keys** in `.env` (copy from `.env.example`; ~50 variables across Runway, Kling, Pika, ElevenLabs, Suno, Replicate, YouTube OAuth, Instagram/Facebook Graph, Twitter, WhatsApp Cloud, Oracle S3). Run `npm run test-apis` after each batch to confirm connectivity.
+7. **Run the YouTube OAuth first-time setup**: `node src/utils/youtubeAuth.js`, approve access, paste the refresh token into `.env`.
+8. **Apply for the platform permissions that gate publishing**: Instagram Reels + Facebook video publish both require Meta App Review for the relevant scopes; Twitter video upload requires Elevated/Pro API access. Budget lead time here — these are the most likely blockers.
+9. **Dry-run the pipeline with `--skip-publish`** (`node src/index.js generate --theme <name> --skip-publish`) to validate phases 1–3, audio, and assembly before risking a live multi-platform publish.
+10. **Import the n8n workflows** (`[import-n8n]` commit message, or manually via the n8n UI) and configure n8n credentials for each HTTP node.
+11. **Activate the n8n weekly trigger** once a full dry-run and one full live run have both succeeded.
+12. **Set up basic VM monitoring** — at minimum, log rotation for `logs/` and a disk-space alert (Oracle Free Tier storage is capped at 20GB and video assets accumulate in `temp/`/`output/`).
+13. **Decide on the admin-state persistence gap (§8)** before relying on the admin UI for anything beyond manual one-off runs.
 
 ---
 
-*Generated from a direct read of every source file in the repository as of commit `17b69f0` — not from memory of earlier design discussion.*
+*Generated from a direct read of every source file in the repository — not from memory of earlier design discussion.*

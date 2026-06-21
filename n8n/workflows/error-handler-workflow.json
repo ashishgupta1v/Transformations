@@ -72,7 +72,7 @@
             { "name": "type", "value": "text" },
             {
               "name": "text",
-              "value": "={{ JSON.stringify({ body: \"⚠️ JAGANNATHA PIPELINE FAILED\\n\\nWorkflow: \" + $json.workflowName + \"\\nFailed node: \" + $json.failedNode + \"\\nError: \" + $json.errorMessage + \"\\nAt: \" + $json.failedAt + \"\\n\\n🙏 Check logs on the Oracle VM for full detail.\" }) }}"
+              "value": "={{ JSON.stringify({ body: \"⚠️ SCIFI PIPELINE FAILED\\n\\nWorkflow: \" + $json.workflowName + \"\\nFailed node: \" + $json.failedNode + \"\\nError: \" + $json.errorMessage + \"\\nAt: \" + $json.failedAt + \"\\n\\nCheck logs on the deployment server for full detail.\" }) }}"
             }
           ]
         },
@@ -86,7 +86,7 @@
     },
     {
       "parameters": {
-        "command": "mkdir -p /home/opc/jagannatha-pipeline/logs && echo \"[{{$json.failedAt}}] workflow=\\\"{{$json.workflowName}}\\\" node=\\\"{{$json.failedNode}}\\\" error=\\\"{{$json.errorMessage}}\\\"\" >> /home/opc/jagannatha-pipeline/logs/n8n-errors.log"
+        "command": "=mkdir -p {{$env.PIPELINE_DIR || '/opt/scifi-pipeline'}}/logs && echo \"[{{$json.failedAt}}] workflow=\\\"{{$json.workflowName}}\\\" node=\\\"{{$json.failedNode}}\\\" error=\\\"{{$json.errorMessage}}\\\"\" >> {{$env.PIPELINE_DIR || '/opt/scifi-pipeline'}}/logs/n8n-errors.log"
       },
       "id": "log-error-file",
       "name": "Log Error to File",
@@ -111,8 +111,8 @@
     "saveManualExecutions": true,
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "tags": ["jagannath", "video-pipeline", "error-handling"],
+  "tags": ["scifi-pipeline", "video-pipeline", "error-handling"],
   "meta": {
-    "instanceId": "jagannatha-pipeline-v1"
+    "instanceId": "scifi-transformation-pipeline-v2"
   }
 }

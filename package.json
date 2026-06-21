@@ -1,7 +1,7 @@
 {
-  "name": "jagannatha-scifi-pipeline",
-  "version": "1.0.0",
-  "description": "AI-powered Sacred SciFi Video Generation Pipeline — Shree Jagannatha Temple Puri",
+  "name": "scifi-transformation-pipeline",
+  "version": "2.0.0",
+  "description": "Generic AI-powered SciFi Transformation Video Pipeline — generates and publishes a 3-phase baseline-to-scifi-to-resolution video for any deity, location, product, or business via a swappable theme file (see themes/)",
   "main": "src/index.js",
   "author": "Ashish Gupta <ashish@digitalbuilders.in>",
   "license": "MIT",

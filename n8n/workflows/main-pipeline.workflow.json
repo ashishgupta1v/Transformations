@@ -1,5 +1,5 @@
 {
-  "name": "Jagannatha SciFi Pipeline",
+  "name": "SciFi Transformation Pipeline",
   "nodes": [
     {
       "parameters": {
@@ -15,199 +15,164 @@
     },
     {
       "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "theme-id-assignment",
+              "name": "themeId",
+              "value": "={{$env.DEFAULT_THEME || 'jagannatha-rathyatra'}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-theme",
+      "name": "Set Theme",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [300, 300],
+      "notes": "Which theme (themes/*.json) this scheduled run uses. Override DEFAULT_THEME in n8n's environment, or edit the fallback value here, to point this schedule at any deity, location, product, or business theme."
+    },
+    {
+      "parameters": {
         "method": "POST",
-        "url": "http://localhost:3000/api/pipeline/start",
+        "url": "={{\"http://localhost:\" + ($env.ADMIN_PORT || 3000) + \"/api/pipeline/start\"}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "x-api-key", "value": "={{$env.ADMIN_API_KEY}}" }
+          ]
+        },
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "mode", "value": "full" },
-            { "name": "project", "value": "jagannatha-scifi" },
+            { "name": "theme", "value": "={{$node[\"Set Theme\"].json.themeId}}" },
             { "name": "timestamp", "value": "={{$now.toISO()}}" }
           ]
         },
-        "options": { "timeout": 3600000 }
+        "options": { "timeout": 30000 }
       },
       "id": "start-pipeline",
       "name": "Start Pipeline API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [300, 300]
+      "position": [500, 300],
+      "notes": "Kicks off the full generate -> assemble -> publish -> notify pipeline (src/index.js runPipeline) for the chosen theme. The admin server runs this asynchronously and returns immediately (202) -- actual progress is polled below, not read from this response."
+    },
+    {
+      "parameters": { "amount": 2, "unit": "minutes" },
+      "id": "wait-poll",
+      "name": "Wait 2 Minutes",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [700, 300]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://api.dev.runwayml.com/v1/image_to_video",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "url": "={{\"http://localhost:\" + ($env.ADMIN_PORT || 3000) + \"/api/pipeline/status\"}}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Runway-Version", "value": "2024-11-06" }
+            { "name": "x-api-key", "value": "={{$env.ADMIN_API_KEY}}" }
           ]
         },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "promptImage", "value": "={{$env.BASE_IMAGE_URL}}" },
-            { "name": "promptText", "value": "Sacred Jagannatha Temple Puri night Rath Yatra diyas chariots Bay of Bengal cinematic drone orbit golden sacred lighting 24fps ultra-realistic" },
-            { "name": "model", "value": "gen3a_turbo" },
-            { "name": "duration", "value": 5 },
-            { "name": "ratio", "value": "768:768" }
-          ]
-        }
+        "options": { "timeout": 15000 }
       },
-      "id": "runway-generate",
-      "name": "Runway — Generate Phase 1",
+      "id": "check-status",
+      "name": "Check Pipeline Status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [500, 200]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.klingai.com/v1/videos/video-to-video",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "input_video_url", "value": "={{$node['Poll-Runway'].json.output[0]}}" },
-            { "name": "prompt", "value": "SCIFI TRANSFORMATION Temple sandstone cracks plasma energy cores Nilachakra quantum portal chariots levitate anti-gravity rings devotees holographic chrome Garuda robot Vimana spacecraft sacred geometry Earth energy nexus" },
-            { "name": "cfg_scale", "value": 0.7 },
-            { "name": "mode", "value": "pro" },
-            { "name": "duration", "value": 10 }
-          ]
-        }
-      },
-      "id": "kling-generate",
-      "name": "Kling AI — SciFi Transform",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [700, 200]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.elevenlabs.io/v1/sound-generation",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "xi-api-key", "value": "={{$env.ELEVENLABS_API_KEY}}" }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "text", "value": "Sacred Hindu temple bells mardala drums Jai Jagannath crowd chant conch shell mahuri Rath Yatra procession Bay of Bengal ocean waves diya crackle festival night Puri" },
-            { "name": "duration_seconds", "value": 15 },
-            { "name": "prompt_influence", "value": 0.3 }
-          ]
-        }
-      },
-      "id": "elevenlabs-sacred",
-      "name": "ElevenLabs — Sacred Audio",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [500, 400]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.elevenlabs.io/v1/sound-generation",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "xi-api-key", "value": "={{$env.ELEVENLABS_API_KEY}}" }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "text", "value": "Quantum portal opening bass whomp anti-gravity engine powering up tesla coil electrical discharge robotic divine army footsteps chrome eagle screech plasma energy beams Sanskrit cosmic drone reactor activation Vimana descent dimensional portal" },
-            { "name": "duration_seconds", "value": 15 },
-            { "name": "prompt_influence", "value": 0.5 }
-          ]
-        }
-      },
-      "id": "elevenlabs-scifi",
-      "name": "ElevenLabs — SciFi Audio",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [700, 400]
-    },
-    {
-      "parameters": {
-        "command": "cd /home/opc/jagannatha-pipeline && node src/index.js assemble --phase1 '={{$node[\"Poll-Runway\"].json.output[0]}}' --phase2 '={{$node[\"Poll-Kling\"].json.url}}' --sacred-audio '={{$node[\"ElevenLabs-Sacred\"].json.path}}' --scifi-audio '={{$node[\"ElevenLabs-SciFi\"].json.path}}'"
-      },
-      "id": "ffmpeg-assemble",
-      "name": "FFmpeg — Assemble Master",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
       "position": [900, 300]
     },
     {
       "parameters": {
-        "command": "cd /home/opc/jagannatha-pipeline && node src/index.js publish --all"
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{$json.status}}",
+              "rightValue": "running",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
       },
-      "id": "publish-all",
-      "name": "Publish All Platforms",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
+      "id": "is-still-running",
+      "name": "Is Still Running?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
       "position": [1100, 300]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://graph.facebook.com/v18.0/={{$env.WHATSAPP_PHONE_ID}}/messages",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer ={{$env.WHATSAPP_TOKEN}}" }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            { "name": "messaging_product", "value": "whatsapp" },
-            { "name": "to", "value": "={{$env.WHATSAPP_NOTIFY_NUMBER}}" },
-            { "name": "type", "value": "text" },
-            { "name": "text", "value": "{\"body\": \"✅ Jagannatha SciFi Video COMPLETE! 🙏\\n\\nAll platforms published successfully.\\n\\nJAI JAGANNATH! 🪔🎆\"}" }
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{$json.status}}",
+              "rightValue": "failed",
+              "operator": { "type": "string", "operation": "equals" }
+            }
           ]
         }
       },
-      "id": "notify-whatsapp",
-      "name": "Notify via WhatsApp",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [1300, 300]
+      "id": "did-it-fail",
+      "name": "Did It Fail?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1300, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "throw new Error(`Pipeline failed (theme: ${$json.theme || 'unknown'}, runId: ${$json.runId || 'unknown'}): ${$json.error || 'unknown error'}`);"
+      },
+      "id": "throw-error",
+      "name": "Throw Pipeline Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 500],
+      "notes": "Throwing here triggers this workflow's configured errorWorkflow (error-handler-workflow.json), which sends the notification alert."
+    },
+    {
+      "parameters": {},
+      "id": "pipeline-complete",
+      "name": "Pipeline Complete",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1500, 340],
+      "notes": "Notification of success is handled inside the pipeline itself (whatsapp.notifyCompletion, theme-driven) -- nothing further to do here."
     }
   ],
   "connections": {
     "Weekly Schedule Trigger": {
+      "main": [[{ "node": "Set Theme", "type": "main", "index": 0 }]]
+    },
+    "Set Theme": {
       "main": [[{ "node": "Start Pipeline API", "type": "main", "index": 0 }]]
     },
     "Start Pipeline API": {
-      "main": [[
-        { "node": "Runway — Generate Phase 1", "type": "main", "index": 0 },
-        { "node": "ElevenLabs — Sacred Audio", "type": "main", "index": 0 },
-        { "node": "ElevenLabs — SciFi Audio", "type": "main", "index": 0 }
-      ]]
+      "main": [[{ "node": "Wait 2 Minutes", "type": "main", "index": 0 }]]
     },
-    "Runway — Generate Phase 1": {
-      "main": [[{ "node": "Kling AI — SciFi Transform", "type": "main", "index": 0 }]]
+    "Wait 2 Minutes": {
+      "main": [[{ "node": "Check Pipeline Status", "type": "main", "index": 0 }]]
     },
-    "Kling AI — SciFi Transform": {
-      "main": [[{ "node": "FFmpeg — Assemble Master", "type": "main", "index": 0 }]]
+    "Check Pipeline Status": {
+      "main": [[{ "node": "Is Still Running?", "type": "main", "index": 0 }]]
     },
-    "ElevenLabs — Sacred Audio": {
-      "main": [[{ "node": "FFmpeg — Assemble Master", "type": "main", "index": 0 }]]
+    "Is Still Running?": {
+      "main": [
+        [{ "node": "Wait 2 Minutes", "type": "main", "index": 0 }],
+        [{ "node": "Did It Fail?", "type": "main", "index": 0 }]
+      ]
     },
-    "ElevenLabs — SciFi Audio": {
-      "main": [[{ "node": "FFmpeg — Assemble Master", "type": "main", "index": 0 }]]
-    },
-    "FFmpeg — Assemble Master": {
-      "main": [[{ "node": "Publish All Platforms", "type": "main", "index": 0 }]]
-    },
-    "Publish All Platforms": {
-      "main": [[{ "node": "Notify via WhatsApp", "type": "main", "index": 0 }]]
+    "Did It Fail?": {
+      "main": [
+        [{ "node": "Throw Pipeline Error", "type": "main", "index": 0 }],
+        [{ "node": "Pipeline Complete", "type": "main", "index": 0 }]
+      ]
     }
   },
   "settings": {
@@ -216,8 +181,8 @@
     "callerPolicy": "workflowsFromSameOwner",
     "errorWorkflow": "error-handler-workflow"
   },
-  "tags": ["jagannath", "video-pipeline", "scifi", "sacred"],
+  "tags": ["scifi-pipeline", "video-pipeline", "generic"],
   "meta": {
-    "instanceId": "jagannatha-pipeline-v1"
+    "instanceId": "scifi-transformation-pipeline-v2"
   }
 }
