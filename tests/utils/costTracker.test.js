@@ -91,6 +91,21 @@ describe('costTracker.recordRun', () => {
     const [, savedLog] = fs.writeJson.mock.calls[0];
     expect(savedLog.runs).toHaveLength(1);
   });
+
+  it('preserves arbitrary meta fields like theme alongside the breakdown', async () => {
+    // src/index.js calls recordRun(usage, { theme: theme.id, exports: [...] })
+    // on every run — the dashboard reads run.theme per row, so this must survive.
+    const run = await costTracker.recordRun(
+      { runway: 1 },
+      { theme: 'test-theme', exports: ['youtube'] }
+    );
+
+    expect(run.theme).toBe('test-theme');
+    expect(run.exports).toEqual(['youtube']);
+
+    const [, savedLog] = fs.writeJson.mock.calls[0];
+    expect(savedLog.runs[0].theme).toBe('test-theme');
+  });
 });
 
 describe('costTracker.getSummary', () => {

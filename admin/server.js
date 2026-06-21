@@ -11,6 +11,7 @@ const chalk = require('chalk');
 const logger = require('../src/utils/logger');
 const costTracker = require('../src/utils/costTracker');
 const { runPipeline } = require('../src/index');
+const { loadTheme, listThemes } = require('../src/utils/themeLoader');
 
 const app = express();
 const PORT = process.env.ADMIN_PORT || 3000;
@@ -25,6 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const state = {
   status: 'idle', // idle | running | completed | failed
   runId: null,
+  theme: null,
   startedAt: null,
   finishedAt: null,
   error: null,
@@ -56,18 +58,27 @@ app.post('/api/pipeline/start', async (req, res) => {
     return res.status(409).json({ error: 'A pipeline run is already in progress', state });
   }
 
+  const themeOption = req.body?.theme || process.env.DEFAULT_THEME;
+  let theme;
+  try {
+    theme = loadTheme(themeOption);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
+
   const runId = `run-${Date.now()}`;
   state.status = 'running';
   state.runId = runId;
+  state.theme = theme.id;
   state.startedAt = new Date().toISOString();
   state.finishedAt = null;
   state.error = null;
 
-  logger.info('Pipeline start requested via admin API', { runId, body: req.body });
+  logger.info('Pipeline start requested via admin API', { runId, theme: theme.id, body: req.body });
 
   // Fire-and-forget — the pipeline itself handles its own logging,
   // cost tracking, and WhatsApp notifications. We just track terminal state.
-  runPipeline({ skipPublish: req.body?.skipPublish === true })
+  runPipeline({ theme: theme.id, skipPublish: req.body?.skipPublish === true })
     .then(() => {
       state.status = 'completed';
       state.finishedAt = new Date().toISOString();
@@ -79,11 +90,32 @@ app.post('/api/pipeline/start', async (req, res) => {
       logger.error('Pipeline run failed (admin-triggered)', { runId, error: error.message });
     });
 
-  res.status(202).json({ accepted: true, runId, status: state.status });
+  res.status(202).json({ accepted: true, runId, theme: theme.id, status: state.status });
 });
 
 app.get('/api/pipeline/status', (req, res) => {
   res.json(state);
+});
+
+app.get('/api/themes', (req, res) => {
+  const themes = listThemes().map((id) => {
+    try {
+      const theme = loadTheme(id);
+      return { id, displayName: theme.displayName, subjectType: theme.subjectType || 'general', tagline: theme.tagline || '' };
+    } catch (error) {
+      return { id, error: error.message };
+    }
+  });
+  res.json({ themes });
+});
+
+app.get('/api/themes/:id', (req, res) => {
+  try {
+    const theme = loadTheme(req.params.id);
+    res.json(theme);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
 });
 
 app.get('/api/costs', async (req, res) => {
@@ -104,6 +136,8 @@ app.listen(PORT, () => {
   console.log(chalk.cyan(`\n🛸 Admin server running: http://localhost:${PORT}`));
   console.log(chalk.cyan(`   POST /api/pipeline/start`));
   console.log(chalk.cyan(`   GET  /api/pipeline/status`));
+  console.log(chalk.cyan(`   GET  /api/themes`));
+  console.log(chalk.cyan(`   GET  /api/themes/:id`));
   console.log(chalk.cyan(`   GET  /api/costs\n`));
   logger.info('Admin server started', { port: PORT });
 });

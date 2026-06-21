@@ -22,12 +22,9 @@ jest.mock('../../src/utils/retry', () => ({
   sleep: jest.fn(() => Promise.resolve()),
 }));
 
+// phases/prompts are theme content now, NOT engine config — config only
+// carries engine-level upscale + polling settings.
 jest.mock('../../config/pipeline.config', () => ({
-  phases: {
-    phase1: { prompt: 'sacred prompt', duration: 5 },
-    phase2: { prompt: 'scifi prompt', negativePrompt: 'neg2', duration: 10 },
-    phase3: { prompt: 'return prompt', negativePrompt: 'neg3', duration: 5 },
-  },
   upscale: { enabled: false, model: 'test-upscale-model', scale: 2 },
   polling: { intervalMs: 1, maxAttempts: 3 },
 }));
@@ -35,6 +32,7 @@ jest.mock('../../config/pipeline.config', () => ({
 const axios = require('axios');
 const config = require('../../config/pipeline.config');
 const VideoGenerator = require('../../src/video/generator');
+const mockTheme = require('../fixtures/mockTheme');
 
 describe('VideoGenerator', () => {
   let generator;
@@ -43,7 +41,16 @@ describe('VideoGenerator', () => {
     jest.clearAllMocks();
     config.upscale.enabled = false;
     config.polling.maxAttempts = 3;
-    generator = new VideoGenerator();
+    generator = new VideoGenerator(mockTheme);
+  });
+
+  describe('constructor / requireTheme guard', () => {
+    it('rejects when no theme was injected', async () => {
+      const bare = new VideoGenerator();
+      await expect(bare.generatePhase1()).rejects.toThrow(
+        /VideoGenerator requires a theme/
+      );
+    });
   });
 
   describe('generatePhase1 (Runway)', () => {
@@ -58,7 +65,7 @@ describe('VideoGenerator', () => {
       expect(result).toEqual({ url: 'https://cdn.example/phase1.mp4', taskId: 'runway-task-1' });
       expect(axios.post).toHaveBeenCalledWith(
         'https://api.dev.runwayml.com/v1/image_to_video',
-        expect.objectContaining({ promptText: 'sacred prompt', duration: 5 }),
+        expect.objectContaining({ promptText: 'phase1 prompt', duration: 5 }),
         expect.any(Object)
       );
     });
@@ -104,7 +111,7 @@ describe('VideoGenerator', () => {
         'https://api.klingai.com/v1/videos/video-to-video',
         expect.objectContaining({
           input_video_url: 'https://cdn.example/phase1.mp4',
-          prompt: 'scifi prompt',
+          prompt: 'phase2 prompt',
         }),
         expect.any(Object)
       );

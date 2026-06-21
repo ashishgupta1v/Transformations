@@ -1,7 +1,8 @@
 // src/notify/whatsapp.js
-// WhatsApp Cloud API notification helper — extracted from the inline
-// notifyCompletion() that used to live in src/index.js so it can be reused
-// for both success and error notifications, and by the admin server.
+// WhatsApp Cloud API notification helper. Message text comes from the
+// active theme's `notifications` templates (themes/*.json) so the wording
+// is never hardcoded to one subject — falls back to generic defaults if no
+// theme/template is supplied (e.g. scripts/test-apis.js calling sendText directly).
 //
 // Note: Meta's WhatsApp Cloud API does not officially support automated
 // "WhatsApp Status" posting — this module sends a regular text/template
@@ -11,6 +12,13 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 const { withRetry } = require('../utils/retry');
+const { renderTemplate } = require('../utils/template');
+
+const DEFAULT_TEMPLATES = {
+  whatsappComplete: '✅ {displayName} video COMPLETE!\n⏱️ Time: {duration} mins\n📱 {exportCount} platform versions ready',
+  whatsappError: '❌ {displayName} pipeline FAILED\n📍 Stage: {stage}\n🐛 {error}\n\nCheck logs on the server.',
+  whatsappLive: 'New {displayName} video is live!\n\nFile ready: {path}',
+};
 
 function isEnabled(flagEnvVar) {
   return process.env[flagEnvVar] === 'true' &&
@@ -35,36 +43,56 @@ async function sendText(body) {
   );
 }
 
-async function notifyCompletion({ duration, exports }) {
+async function notifyCompletion({ theme, duration, exports }) {
   if (!isEnabled('NOTIFY_ON_COMPLETE')) {
     logger.debug('WhatsApp completion notification disabled or not configured');
     return;
   }
 
   try {
-    await sendText(
-      `✅ Jagannatha SciFi Video COMPLETE!\n⏱️ Time: ${duration} mins\n📱 ${Object.keys(exports).length} platform versions ready\n🙏 JAI JAGANNATH!`
-    );
+    const template = theme?.notifications?.whatsappComplete || DEFAULT_TEMPLATES.whatsappComplete;
+    const body = renderTemplate(template, {
+      displayName: theme?.displayName || 'Pipeline',
+      tagline: theme?.tagline || '',
+      duration,
+      exportCount: Object.keys(exports || {}).length,
+    });
+    await sendText(body);
     logger.info('WhatsApp completion notification sent');
   } catch (error) {
     logger.warn('WhatsApp completion notification failed', { error: error.message });
   }
 }
 
-async function notifyError({ stage, error }) {
+async function notifyError({ theme, stage, error }) {
   if (!isEnabled('NOTIFY_ON_ERROR')) {
     logger.debug('WhatsApp error notification disabled or not configured');
     return;
   }
 
   try {
-    await sendText(
-      `❌ Jagannatha Pipeline FAILED\n📍 Stage: ${stage}\n🐛 ${error}\n\nCheck logs on the Oracle VM.`
-    );
+    const template = theme?.notifications?.whatsappError || DEFAULT_TEMPLATES.whatsappError;
+    const body = renderTemplate(template, {
+      displayName: theme?.displayName || 'Pipeline',
+      tagline: theme?.tagline || '',
+      stage,
+      error,
+    });
+    await sendText(body);
     logger.info('WhatsApp error notification sent');
   } catch (sendError) {
     logger.warn('WhatsApp error notification failed', { error: sendError.message });
   }
 }
 
-module.exports = { notifyCompletion, notifyError, sendText };
+async function notifyLive({ theme, path: filePath }) {
+  const template = theme?.notifications?.whatsappLive || DEFAULT_TEMPLATES.whatsappLive;
+  const body = renderTemplate(template, {
+    displayName: theme?.displayName || 'Pipeline',
+    tagline: theme?.tagline || '',
+    path: filePath,
+  });
+  return sendText(body);
+}
+
+module.exports = { notifyCompletion, notifyError, notifyLive, sendText };

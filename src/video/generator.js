@@ -1,5 +1,9 @@
 // src/video/generator.js
-// Handles all video generation via Runway, Kling, Pika + optional Replicate 4K upscale
+// Handles all video generation via Runway, Kling, Pika + optional Replicate 4K upscale.
+// Subject-specific content (prompts, base image, duration) comes from a
+// theme object (see themes/*.json + src/utils/themeLoader.js) passed into
+// the constructor. Engine-level tuning (polling/upscale) stays in
+// config/pipeline.config.js and is shared across all themes.
 
 const axios = require('axios');
 const fs = require('fs-extra');
@@ -8,15 +12,24 @@ const config = require('../../config/pipeline.config');
 const { withRetry, sleep } = require('../utils/retry');
 
 class VideoGenerator {
-  constructor() {
+  constructor(theme) {
+    this.theme = theme || null;
     this.tempDir = process.env.TEMP_DIR || './temp';
     fs.ensureDirSync(this.tempDir);
+  }
+
+  requireTheme() {
+    if (!this.theme) {
+      throw new Error('VideoGenerator requires a theme — pass one to the constructor (see themes/)');
+    }
+    return this.theme;
   }
 
   // ── PHASE 1: RUNWAY GEN-3 ───────────────
   async generatePhase1() {
     logger.info('Starting Phase 1 — Runway Gen-3');
-    const { prompt, duration } = config.phases.phase1;
+    const theme = this.requireTheme();
+    const { prompt, duration } = theme.phases.phase1;
 
     try {
       const taskId = await withRetry(
@@ -24,8 +37,7 @@ class VideoGenerator {
           const response = await axios.post(
             'https://api.dev.runwayml.com/v1/image_to_video',
             {
-              promptImage: process.env.BASE_IMAGE_URL ||
-                'https://your-oracle-storage/jagannath_base.png',
+              promptImage: theme.baseImageUrl,
               promptText: prompt,
               model: process.env.RUNWAY_MODEL || 'gen3a_turbo',
               duration,
@@ -59,8 +71,9 @@ class VideoGenerator {
 
   // ── PHASE 2: KLING AI ───────────────────
   async generatePhase2(inputVideoUrl) {
-    logger.info('Starting Phase 2 — Kling AI SciFi');
-    const { prompt, negativePrompt, duration } = config.phases.phase2;
+    logger.info('Starting Phase 2 — Kling AI Transformation');
+    const theme = this.requireTheme();
+    const { prompt, negativePrompt, duration } = theme.phases.phase2;
 
     try {
       const taskId = await withRetry(
@@ -102,7 +115,8 @@ class VideoGenerator {
   // ── PHASE 3: PIKA LABS ──────────────────
   async generatePhase3() {
     logger.info('Starting Phase 3 — Pika Labs Return');
-    const { prompt, negativePrompt, duration } = config.phases.phase3;
+    const theme = this.requireTheme();
+    const { prompt, negativePrompt, duration } = theme.phases.phase3;
 
     try {
       const taskId = await withRetry(
@@ -140,6 +154,7 @@ class VideoGenerator {
   }
 
   // ── OPTIONAL: 4K UPSCALE (REPLICATE) ────
+  // Engine-level — not theme-dependent.
   async upscaleVideo(videoUrl) {
     if (!config.upscale.enabled) {
       logger.debug('Upscale disabled, skipping');

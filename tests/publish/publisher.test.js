@@ -29,8 +29,18 @@ jest.mock('../../src/utils/youtubeAuth', () => ({
   getAuthenticatedClient: jest.fn(() => ({ mockAuth: true })),
 }));
 
+// publisher.js's notifyWhatsAppStatus calls whatsapp.notifyLive({theme, path}),
+// not sendText directly — notifyLive is the theme-aware entry point.
 jest.mock('../../src/notify/whatsapp', () => ({
-  sendText: jest.fn().mockResolvedValue({}),
+  notifyLive: jest.fn().mockResolvedValue({}),
+}));
+
+// publishFromOutput() checks config.platforms for filenames (engine-level).
+jest.mock('../../config/pipeline.config', () => ({
+  platforms: {
+    youtube: { filename: 'youtube_1080.mp4' },
+    shorts: { filename: 'shorts_1080x1920.mp4' },
+  },
 }));
 
 const mockYoutubeInsert = jest.fn();
@@ -72,6 +82,7 @@ const fs = require('fs-extra');
 const whatsapp = require('../../src/notify/whatsapp');
 const storage = require('../../src/utils/storage');
 const Publisher = require('../../src/publish/publisher');
+const mockTheme = require('../fixtures/mockTheme');
 
 describe('Publisher', () => {
   let publisher;
@@ -79,7 +90,16 @@ describe('Publisher', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     fs.pathExists.mockResolvedValue(false);
-    publisher = new Publisher();
+    publisher = new Publisher(mockTheme);
+  });
+
+  describe('constructor / requireTheme guard', () => {
+    it('rejects when no theme was injected', async () => {
+      const bare = new Publisher();
+      await expect(bare.publishYouTube({ path: './output/youtube_1080.mp4' })).rejects.toThrow(
+        /Publisher requires a theme/
+      );
+    });
   });
 
   describe('publishYouTube', () => {
@@ -94,7 +114,13 @@ describe('Publisher', () => {
         expect.objectContaining({
           part: ['snippet', 'status'],
           requestBody: expect.objectContaining({
-            snippet: expect.objectContaining({ defaultLanguage: 'hi' }),
+            snippet: expect.objectContaining({
+              title: 'YT Title',
+              description: 'YT Description',
+              // defaultLanguage is theme-driven (platforms.youtube.defaultLanguage,
+              // falling back to theme.language) — not hardcoded to any one locale.
+              defaultLanguage: 'en',
+            }),
             status: expect.objectContaining({ selfDeclaredMadeForKids: false }),
           }),
         })
@@ -160,18 +186,21 @@ describe('Publisher', () => {
   });
 
   describe('notifyWhatsAppStatus', () => {
-    it('sends a WhatsApp text notification mentioning the export path', async () => {
+    it('delegates to whatsapp.notifyLive with the theme and export path', async () => {
       const result = await publisher.notifyWhatsAppStatus({ path: './output/whatsapp_720.mp4' });
 
       expect(result).toEqual({ notified: true });
-      expect(whatsapp.sendText).toHaveBeenCalledWith(expect.stringContaining('./output/whatsapp_720.mp4'));
+      expect(whatsapp.notifyLive).toHaveBeenCalledWith({
+        theme: mockTheme,
+        path: './output/whatsapp_720.mp4',
+      });
     });
 
     it('skips silently when no export file is provided', async () => {
       const result = await publisher.notifyWhatsAppStatus(undefined);
 
       expect(result).toEqual({ skipped: true });
-      expect(whatsapp.sendText).not.toHaveBeenCalled();
+      expect(whatsapp.notifyLive).not.toHaveBeenCalled();
     });
   });
 

@@ -1,6 +1,8 @@
 // src/publish/publisher.js
 // Handles publishing to YouTube, YouTube Shorts, Instagram, Twitter/X,
-// Facebook, and a WhatsApp completion notification.
+// Facebook, and a WhatsApp completion notification. All titles/captions/
+// descriptions/tags come from the active theme (themes/*.json) passed into
+// the constructor — nothing subject-specific is hardcoded here.
 
 const axios = require('axios');
 const fs = require('fs-extra');
@@ -15,8 +17,16 @@ const { getAuthenticatedClient } = require('../utils/youtubeAuth');
 const whatsapp = require('../notify/whatsapp');
 
 class Publisher {
-  constructor() {
+  constructor(theme) {
+    this.theme = theme || null;
     this.outputDir = process.env.OUTPUT_DIR || './output';
+  }
+
+  requireTheme() {
+    if (!this.theme) {
+      throw new Error('Publisher requires a theme — pass one to the constructor (see themes/)');
+    }
+    return this.theme;
   }
 
   // ── PUBLISH ALL PLATFORMS ────────────────
@@ -52,7 +62,8 @@ class Publisher {
     if (!exportData?.path) throw new Error('No YouTube export file');
     logger.info('Publishing to YouTube');
 
-    const cfg = config.platforms.youtube;
+    const theme = this.requireTheme();
+    const cfg = theme.platforms.youtube;
     const auth = getAuthenticatedClient();
     const youtube = google.youtube({ version: 'v3', auth });
 
@@ -62,13 +73,13 @@ class Publisher {
         requestBody: {
           snippet: {
             title: cfg.title,
-            description: this.buildYouTubeDescription(),
+            description: cfg.description,
             tags: cfg.tags,
             categoryId: cfg.categoryId,
-            defaultLanguage: 'hi',
+            defaultLanguage: cfg.defaultLanguage || theme.language,
           },
           status: {
-            privacyStatus: cfg.privacy,
+            privacyStatus: cfg.privacy || 'public',
             selfDeclaredMadeForKids: false,
           },
         },
@@ -90,7 +101,8 @@ class Publisher {
     if (!exportData?.path) throw new Error('No Instagram export file');
     logger.info('Publishing to Instagram');
 
-    const cfg = config.platforms.instagramReel;
+    const theme = this.requireTheme();
+    const cfg = theme.platforms.instagramReel;
     const userId = process.env.INSTAGRAM_USER_ID;
     const token = process.env.INSTAGRAM_ACCESS_TOKEN;
 
@@ -132,6 +144,8 @@ class Publisher {
     if (!exportData?.path) throw new Error('No Shorts export file');
     logger.info('Publishing YouTube Shorts');
 
+    const theme = this.requireTheme();
+    const cfg = theme.platforms.shorts;
     const auth = getAuthenticatedClient();
     const youtube = google.youtube({ version: 'v3', auth });
 
@@ -140,13 +154,13 @@ class Publisher {
         part: ['snippet', 'status'],
         requestBody: {
           snippet: {
-            title: 'Rath Yatra SciFi Night 🤖🛸 JAI JAGANNATH! #Shorts',
-            description: 'Sacred meets sci-fi! #JaiJagannath #Shorts #RathYatra',
-            tags: ['Shorts', 'JaiJagannath', 'RathYatra', 'SciFi'],
-            categoryId: '22',
+            title: cfg.title,
+            description: cfg.description,
+            tags: cfg.tags,
+            categoryId: cfg.categoryId,
           },
           status: {
-            privacyStatus: 'public',
+            privacyStatus: cfg.privacy || 'public',
             selfDeclaredMadeForKids: false,
           },
         },
@@ -164,11 +178,14 @@ class Publisher {
   }
 
   // ── TWITTER/X UPLOAD ─────────────────────
-  // Uses twitter-api-v2 (proper OAuth 1.0a signing) instead of the previous
-  // hand-rolled, non-functional Authorization header stub.
+  // Uses twitter-api-v2 (proper OAuth 1.0a signing) instead of a hand-rolled
+  // Authorization header.
   async publishTwitter(exportData) {
     if (!exportData?.path) throw new Error('No Twitter export file');
     logger.info('Publishing to Twitter/X');
+
+    const theme = this.requireTheme();
+    const cfg = theme.platforms.twitter;
 
     const client = new TwitterApi({
       appKey: process.env.TWITTER_API_KEY,
@@ -184,7 +201,7 @@ class Publisher {
 
     const tweet = await withRetry(
       () => client.v2.tweet({
-        text: '🤖⚡ Sacred meets Sci-Fi! Jagannatha Temple transforms into quantum energy reactor 🛸\n\nJAI JAGANNATH! 🙏🪔\n\n#JaiJagannath #RathYatra #SciFi #Puri #Odisha #AIVideo',
+        text: cfg.text,
         media: { media_ids: [mediaId] },
       }),
       { label: 'Twitter tweet post' }
@@ -199,6 +216,8 @@ class Publisher {
     if (!exportData?.path) throw new Error('No Facebook export file');
     logger.info('Publishing to Facebook');
 
+    const theme = this.requireTheme();
+    const cfg = theme.platforms.facebook;
     const pageId = process.env.FACEBOOK_PAGE_ID;
     const token = process.env.FACEBOOK_ACCESS_TOKEN;
 
@@ -206,7 +225,7 @@ class Publisher {
       async () => {
         const form = new FormData();
         form.append('file', fs.createReadStream(exportData.path));
-        form.append('description', '🤖⚡ SACRED MEETS SCI-FI!\n\nJagannatha Temple Puri transforms into an interdimensional quantum energy reactor.\n\nJAI JAGANNATH! 🙏🪔🎆\n\n#JaiJagannath #RathYatra #SciFi #Puri #Odisha');
+        form.append('description', cfg.description);
         form.append('access_token', token);
 
         return axios.post(
@@ -225,41 +244,17 @@ class Publisher {
   // ── WHATSAPP NOTIFICATION (best-effort "status") ──
   // Meta's WhatsApp Cloud API has no public "post to Status" endpoint, so
   // this sends a notification message with the export summary instead of
-  // a true Status post.
+  // a true Status post. Message text comes from theme.notifications.whatsappLive.
   async notifyWhatsAppStatus(exportData) {
     if (!exportData?.path) {
       logger.debug('No WhatsApp export file, skipping notification');
       return { skipped: true };
     }
-    await whatsapp.sendText(
-      `🤖⚡ New Jagannatha SciFi video is live!\n\nFile ready: ${exportData.path}\n🙏 JAI JAGANNATH!`
-    );
+    await whatsapp.notifyLive({ theme: this.theme, path: exportData.path });
     return { notified: true };
   }
 
   // ── HELPERS ──────────────────────────────
-  buildYouTubeDescription() {
-    return `🤖⚡ Sacred meets Sci-Fi! ⚡🤖
-
-The 2,000-year-old Shree Jagannatha Temple, Puri transforms into an interdimensional quantum energy reactor...
-
-🛸 Divine Vimana spacecraft descends
-🤖 Chrome Garuda robot eagle — 40-meter wingspan
-⚡ Nilachakra becomes quantum portal wormhole
-🌍 Earth revealed as sacred energy nexus
-🔴🟡 Nandighosa — Lord Jagannatha's chariot LEVITATES
-👁️ Jagannatha's eyes fire divine golden laser beams
-
-JAI JAGANNATH! 🙏
-
-Created with AI — Digital Builders Agency
-ashishgupta.dev
-
-#JaiJagannath #RathYatra #SciFi #SacredSciFi
-#Puri #Odisha #AIVideo #CinematicIndia
-#HinduSciFi #DivineTransformation #Jagannath`;
-  }
-
   async waitForInstagramContainer(containerId, token) {
     let attempts = 0;
     while (attempts < 30) {

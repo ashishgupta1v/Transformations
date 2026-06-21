@@ -1,5 +1,8 @@
 // src/index.js
-// Main entry point — Jagannatha SciFi Pipeline
+// Main entry point — generic SciFi Transformation Video Pipeline.
+// Subject-specific content (which deity/location/product/business this run
+// is about) is loaded at runtime from a theme file (see themes/*.json and
+// src/utils/themeLoader.js) via --theme <name> or the DEFAULT_THEME env var.
 
 require('dotenv').config();
 const { Command } = require('commander');
@@ -13,58 +16,74 @@ const Publisher = require('./publish/publisher');
 const costTracker = require('./utils/costTracker');
 const cronManager = require('./utils/cronManager');
 const whatsapp = require('./notify/whatsapp');
+const { loadTheme, listThemes } = require('./utils/themeLoader');
 
 const program = new Command();
 
+function resolveThemeOption(themeOption) {
+  return loadTheme(themeOption || process.env.DEFAULT_THEME);
+}
+
 // ── ASCII BANNER ────────────────────────────
-function printBanner() {
+function printBanner(theme) {
+  const title = (theme?.bannerTitle || 'SCIFI TRANSFORMATION PIPELINE').toUpperCase();
+  const subtitle = theme?.displayName || 'AI Video Generation Factory';
+  const tagline = theme?.tagline || '';
+  const pad = (s, len) => {
+    const clipped = s.length > len ? s.slice(0, len) : s;
+    const total = len - clipped.length;
+    const left = Math.floor(total / 2);
+    const right = total - left;
+    return ' '.repeat(left) + clipped + ' '.repeat(right);
+  };
+  const width = 49;
   console.log(chalk.yellow(`
-╔═══════════════════════════════════════════════╗
-║     🛸 JAGANNATHA SCIFI PIPELINE v1.0 🛸      ║
-║     Sacred Meets Sci-Fi Video Factory         ║
-║     Digital Builders — ashishgupta.dev        ║
-║                                               ║
-║          जय जगन्नाथ! JAI JAGANNATH! 🙏        ║
-╚═══════════════════════════════════════════════╝
+╔${'═'.repeat(width)}╗
+║${pad(`🛸 ${title} 🛸`, width)}║
+║${pad(subtitle, width)}║
+║${pad('Digital Builders — ashishgupta.dev', width)}║
+║${pad('', width)}║
+${tagline ? `║${pad(tagline, width)}║\n` : ''}╚${'═'.repeat(width)}╝
   `));
 }
 
 // ── MAIN PIPELINE ───────────────────────────
 async function runPipeline(options = {}) {
-  printBanner();
+  const theme = resolveThemeOption(options.theme);
+  printBanner(theme);
   const startTime = Date.now();
 
-  logger.info('Pipeline started', { options });
+  logger.info('Pipeline started', { theme: theme.id, options });
   const usage = {};
 
   try {
     // ── STEP 1: VIDEO GENERATION ────────────
-    console.log(chalk.cyan('\n📹 STEP 1: Generating Video Phases...\n'));
-    const videoGen = new VideoGenerator();
+    console.log(chalk.cyan(`\n📹 STEP 1: Generating Video Phases — ${theme.displayName}...\n`));
+    const videoGen = new VideoGenerator(theme);
 
-    const spinner1 = ora('Generating Phase 1 — Sacred Baseline (Runway)').start();
+    const spinner1 = ora(`Generating Phase 1 — ${theme.phases.phase1.name || 'Baseline'} (Runway)`).start();
     const phase1 = await videoGen.generatePhase1();
     usage.runway = (usage.runway || 0) + 1;
     spinner1.succeed(`Phase 1 complete: ${phase1.url}`);
 
-    const spinner2 = ora('Generating Phase 2 — SciFi Transformation (Kling AI)').start();
+    const spinner2 = ora(`Generating Phase 2 — ${theme.phases.phase2.name || 'Transformation'} (Kling AI)`).start();
     const phase2 = await videoGen.generatePhase2(phase1.url);
     usage.kling = (usage.kling || 0) + 1;
     spinner2.succeed(`Phase 2 complete: ${phase2.url}`);
 
-    const spinner3 = ora('Generating Phase 3 — Sacred Return (Pika)').start();
+    const spinner3 = ora(`Generating Phase 3 — ${theme.phases.phase3.name || 'Resolution'} (Pika)`).start();
     const phase3 = await videoGen.generatePhase3();
     usage.pika = (usage.pika || 0) + 1;
     spinner3.succeed(`Phase 3 complete: ${phase3.url}`);
 
     // ── STEP 2: AUDIO GENERATION ────────────
     console.log(chalk.cyan('\n🎵 STEP 2: Generating Audio Layers (Parallel)...\n'));
-    const audioGen = new AudioGenerator();
+    const audioGen = new AudioGenerator(theme);
 
     const spinner4 = ora('Generating all audio layers in parallel...').start();
-    const [sacredAudio, scifiAudio, musicScore] = await Promise.all([
-      audioGen.generateSacredAudio(),
-      audioGen.generateSciFiAudio(),
+    const [ambientAudio, transformationAudio, musicScore] = await Promise.all([
+      audioGen.generateAmbientAudio(),
+      audioGen.generateTransformationAudio(),
       audioGen.generateMusicScore(),
     ]);
     usage.elevenlabs = (usage.elevenlabs || 0) + 2;
@@ -73,15 +92,15 @@ async function runPipeline(options = {}) {
 
     // ── STEP 3: ASSEMBLY ────────────────────
     console.log(chalk.cyan('\n⚙️  STEP 3: Assembling Final Video...\n'));
-    const assembler = new VideoAssembler();
+    const assembler = new VideoAssembler(theme);
 
     const spinner5 = ora('Downloading all assets...').start();
     await assembler.downloadAssets({
       phase1: phase1.url,
       phase2: phase2.url,
       phase3: phase3.url,
-      sacredAudio: sacredAudio.url,
-      scifiAudio: scifiAudio.url,
+      ambientAudio: ambientAudio.url,
+      transformationAudio: transformationAudio.url,
       musicScore: musicScore.url,
     });
     spinner5.succeed('All assets downloaded');
@@ -105,7 +124,7 @@ async function runPipeline(options = {}) {
     let results = {};
     if (!options.skipPublish) {
       console.log(chalk.cyan('\n🚀 STEP 5: Publishing to All Platforms...\n'));
-      const publisher = new Publisher();
+      const publisher = new Publisher(theme);
       results = await publisher.publishAll(exports);
 
       console.log(chalk.green('\n✅ PUBLISHED SUCCESSFULLY:\n'));
@@ -119,7 +138,7 @@ async function runPipeline(options = {}) {
     }
 
     // ── COST TRACKING ────────────────────────
-    await costTracker.recordRun(usage, { exports: Object.keys(exports) });
+    await costTracker.recordRun(usage, { theme: theme.id, exports: Object.keys(exports) });
 
     // ── COMPLETE ────────────────────────────
     const duration = Math.round((Date.now() - startTime) / 1000 / 60);
@@ -127,33 +146,33 @@ async function runPipeline(options = {}) {
 ╔═══════════════════════════════════════════════╗
 ║              🎉 PIPELINE COMPLETE!            ║
 ║                                               ║
+║  Theme:       ${theme.displayName}
 ║  Total Time:  ${duration} minutes
 ║  Master:      output/master_output.mp4        ║
 ║  Platforms:   ${Object.keys(exports).length} versions exported
-║                                               ║
-║          JAI JAGANNATH! 🙏🪔🎆               ║
 ╚═══════════════════════════════════════════════╝
     `));
 
-    await whatsapp.notifyCompletion({ duration, exports });
+    await whatsapp.notifyCompletion({ theme, duration, exports });
 
   } catch (error) {
     logger.error('Pipeline failed', { error: error.message });
     console.log(chalk.red(`\n❌ Pipeline failed: ${error.message}`));
-    await whatsapp.notifyError({ stage: 'generate', error: error.message });
+    await whatsapp.notifyError({ theme, stage: 'generate', error: error.message });
     process.exitCode = 1;
   }
 }
 
 // ── ASSEMBLE-ONLY (used by n8n: phases generated upstream by HTTP nodes) ──
 async function runAssembleOnly(options = {}) {
-  printBanner();
-  logger.info('Assemble-only run started', { options });
+  const theme = resolveThemeOption(options.theme);
+  printBanner(theme);
+  logger.info('Assemble-only run started', { theme: theme.id, options });
 
   try {
-    const videoGen = new VideoGenerator();
-    const audioGen = new AudioGenerator();
-    const assembler = new VideoAssembler();
+    const videoGen = new VideoGenerator(theme);
+    const audioGen = new AudioGenerator(theme);
+    const assembler = new VideoAssembler(theme);
 
     const phase1Url = options.phase1;
     const phase2Url = options.phase2;
@@ -165,19 +184,18 @@ async function runAssembleOnly(options = {}) {
     const phase3 = await videoGen.generatePhase3();
     const musicScore = await audioGen.generateMusicScore();
 
-    const assembler2 = assembler;
-    await assembler2.downloadAssets({
+    await assembler.downloadAssets({
       phase1: phase1Url,
       phase2: phase2Url,
       phase3: phase3.url,
-      sacredAudio: options.sacredAudio ? `file://${options.sacredAudio}` : undefined,
-      scifiAudio: options.scifiAudio ? `file://${options.scifiAudio}` : undefined,
+      ambientAudio: options.ambientAudio ? `file://${options.ambientAudio}` : undefined,
+      transformationAudio: options.transformationAudio ? `file://${options.transformationAudio}` : undefined,
       musicScore: musicScore.url,
     });
 
-    await assembler2.mixAudio();
-    const masterVideo = await assembler2.assembleFinalVideo();
-    const exports = await assembler2.exportPlatformVersions(masterVideo.path);
+    await assembler.mixAudio();
+    const masterVideo = await assembler.assembleFinalVideo();
+    const exports = await assembler.exportPlatformVersions(masterVideo.path);
 
     console.log(chalk.green(`\n✅ Assembly complete: ${masterVideo.path}`));
     logger.info('Assemble-only run complete', { exports: Object.keys(exports) });
@@ -185,20 +203,21 @@ async function runAssembleOnly(options = {}) {
   } catch (error) {
     logger.error('Assemble-only run failed', { error: error.message });
     console.log(chalk.red(`\n❌ Assembly failed: ${error.message}`));
-    await whatsapp.notifyError({ stage: 'assemble', error: error.message });
+    await whatsapp.notifyError({ theme, stage: 'assemble', error: error.message });
     process.exitCode = 1;
   }
 }
 
 // ── CLI SETUP ───────────────────────────────
 program
-  .name('jagannatha-pipeline')
-  .description('Sacred SciFi Video Generation Pipeline')
-  .version('1.0.0');
+  .name('scifi-pipeline')
+  .description('Generic SciFi Transformation Video Pipeline — any deity, location, product, or business via --theme')
+  .version('2.0.0');
 
 program
   .command('generate')
   .description('Run full video generation pipeline')
+  .option('--theme <name>', 'Theme to use (see list-themes); falls back to DEFAULT_THEME env var')
   .option('--skip-publish', 'Generate videos but skip publishing')
   .option('--phase <number>', 'Run only specific phase (1, 2, or 3)')
   .action(runPipeline);
@@ -206,24 +225,49 @@ program
 program
   .command('assemble')
   .description('Assemble final video from already-generated phase URLs (used by n8n)')
+  .option('--theme <name>', 'Theme to use (see list-themes); falls back to DEFAULT_THEME env var')
   .requiredOption('--phase1 <url>', 'Phase 1 video URL')
   .requiredOption('--phase2 <url>', 'Phase 2 video URL')
-  .option('--sacred-audio <path>', 'Local path to sacred audio file')
-  .option('--scifi-audio <path>', 'Local path to sci-fi audio file')
+  .option('--ambient-audio <path>', 'Local path to a pre-generated ambient/baseline audio file')
+  .option('--transformation-audio <path>', 'Local path to a pre-generated transformation audio file')
   .action((opts) => runAssembleOnly({
+    theme: opts.theme,
     phase1: opts.phase1,
     phase2: opts.phase2,
-    sacredAudio: opts.sacredAudio,
-    scifiAudio: opts.scifiAudio,
+    ambientAudio: opts.ambientAudio,
+    transformationAudio: opts.transformationAudio,
   }));
 
 program
   .command('publish')
   .description('Publish pre-generated videos to all platforms')
+  .option('--theme <name>', 'Theme to use (see list-themes); falls back to DEFAULT_THEME env var')
   .option('--all', 'Publish all platform exports found in output/')
-  .action(async () => {
-    const publisher = new Publisher();
+  .action(async (opts) => {
+    const theme = resolveThemeOption(opts.theme);
+    const publisher = new Publisher(theme);
     await publisher.publishFromOutput();
+  });
+
+program
+  .command('list-themes')
+  .description('List all available themes (themes/*.json)')
+  .action(() => {
+    const themes = listThemes();
+    if (!themes.length) {
+      console.log(chalk.red('No themes found in themes/. Copy themes/_template.json to get started.'));
+      return;
+    }
+    console.log(chalk.cyan('\nAvailable themes:\n'));
+    themes.forEach((id) => {
+      try {
+        const theme = loadTheme(id);
+        console.log(`  ${chalk.green(id)} — ${theme.displayName} (${theme.subjectType || 'general'})`);
+      } catch (error) {
+        console.log(`  ${chalk.red(id)} — invalid: ${error.message}`);
+      }
+    });
+    console.log();
   });
 
 program
@@ -250,10 +294,11 @@ program
 program
   .command('schedule')
   .description('Run pipeline on a recurring cron schedule (local fallback to n8n)')
+  .option('--theme <name>', 'Theme to use (see list-themes); falls back to DEFAULT_THEME env var')
   .option('--cron <expression>', 'Cron expression', '0 2 * * 1')
   .action((opts) => {
     console.log(chalk.cyan(`\n⏰ Scheduling pipeline runs: ${opts.cron} (Asia/Kolkata)\n`));
-    cronManager.schedule('main-pipeline', opts.cron, () => runPipeline({}));
+    cronManager.schedule('main-pipeline', opts.cron, () => runPipeline({ theme: opts.theme }));
     console.log(chalk.green('Scheduler running. Press Ctrl+C to stop.'));
   });
 

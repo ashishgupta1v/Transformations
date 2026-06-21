@@ -75,5 +75,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`📊 Jagannatha Pipeline Dashboard: http://localhost:${PORT}`);
+  console.log(`📊 SciFi Transformation Pipeline Dashboard: http://localhost:${PORT}`);
 });

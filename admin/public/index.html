@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>🛸 Jagannatha Pipeline — Admin</title>
+<title>🛸 SciFi Transformation Pipeline — Admin</title>
 <style>
   body {
     margin: 0;
@@ -67,13 +67,20 @@
 </style>
 </head>
 <body>
-  <h1>🛸 JAGANNATHA PIPELINE — ADMIN CONTROL</h1>
-  <div class="subtitle">Trigger and monitor the sacred sci-fi video pipeline · JAI JAGANNATH! 🙏</div>
+  <h1>🛸 SCIFI TRANSFORMATION PIPELINE — ADMIN CONTROL</h1>
+  <div class="subtitle">Trigger and monitor video generation runs for any theme — deity, location, product, or business.</div>
 
   <div class="panel">
     <div class="row">
       <label>Admin API Key</label>
       <input type="password" id="apiKey" placeholder="leave blank if ADMIN_API_KEY unset">
+    </div>
+    <div class="row">
+      <label>Theme</label>
+      <select id="themeSelect" style="background:#0b0e1a;border:1px solid #2a3356;color:#e6e9f5;border-radius:6px;padding:6px 10px;flex:1;font-size:13px;">
+        <option value="">Loading themes…</option>
+      </select>
+      <button class="secondary" onclick="loadThemes()">↻ Reload Themes</button>
     </div>
     <div class="row">
       <button onclick="startPipeline()" id="startBtn">▶ Start Pipeline</button>
@@ -106,11 +113,35 @@ function setBadge(status) {
   el.className = 'status-badge status-' + status;
 }
 
+async function loadThemes() {
+  const select = document.getElementById('themeSelect');
+  select.innerHTML = '<option value="">Loading themes…</option>';
+  try {
+    const res = await fetch('/api/themes', { headers: headers() });
+    const data = await res.json();
+    const themes = data.themes || [];
+    if (!themes.length) {
+      select.innerHTML = '<option value="">No themes found in themes/</option>';
+      return;
+    }
+    select.innerHTML = themes
+      .map((t) => `<option value="${t.id}">${t.displayName || t.id}${t.error ? ' (invalid)' : ''}</option>`)
+      .join('');
+  } catch (err) {
+    select.innerHTML = '<option value="">Error loading themes</option>';
+  }
+}
+
 async function startPipeline() {
   const btn = document.getElementById('startBtn');
+  const theme = document.getElementById('themeSelect').value;
   btn.disabled = true;
   try {
-    const res = await fetch('/api/pipeline/start', { method: 'POST', headers: headers(), body: '{}' });
+    const res = await fetch('/api/pipeline/start', {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ theme }),
+    });
     const data = await res.json();
     document.getElementById('statusJson').textContent = JSON.stringify(data, null, 2);
     if (data.status) setBadge(data.status);
@@ -142,6 +173,7 @@ async function loadCosts() {
   }
 }
 
+loadThemes();
 refreshStatus();
 setInterval(refreshStatus, 15000);
 </script>

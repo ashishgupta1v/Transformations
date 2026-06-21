@@ -21,12 +21,9 @@ jest.mock('../../src/utils/retry', () => ({
   sleep: jest.fn(() => Promise.resolve()),
 }));
 
+// audio content (prompts/volumes) is theme content now — config only
+// carries engine-level polling settings.
 jest.mock('../../config/pipeline.config', () => ({
-  audio: {
-    sacred: { prompt: 'sacred bells prompt', duration: 15, volume: 1.0 },
-    scifi: { prompt: 'quantum portal prompt', duration: 15, volume: 0.85 },
-    music: { prompt: 'cinematic score prompt', duration: 15, instrumental: true, volume: 0.65 },
-  },
   polling: { intervalMs: 1, maxAttempts: 3 },
 }));
 
@@ -34,6 +31,7 @@ const axios = require('axios');
 const fs = require('fs-extra');
 const config = require('../../config/pipeline.config');
 const AudioGenerator = require('../../src/audio/generator');
+const mockTheme = require('../fixtures/mockTheme');
 
 describe('AudioGenerator', () => {
   let generator;
@@ -41,39 +39,48 @@ describe('AudioGenerator', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     config.polling.maxAttempts = 3;
-    generator = new AudioGenerator();
+    generator = new AudioGenerator(mockTheme);
   });
 
-  describe('generateSacredAudio', () => {
+  describe('constructor / requireTheme guard', () => {
+    it('rejects when no theme was injected', async () => {
+      const bare = new AudioGenerator();
+      await expect(bare.generateAmbientAudio()).rejects.toThrow(
+        /AudioGenerator requires a theme/
+      );
+    });
+  });
+
+  describe('generateAmbientAudio', () => {
     it('posts to ElevenLabs sound-generation and writes the mp3 locally', async () => {
       const fakeBytes = Buffer.from('fake-mp3-bytes');
       axios.post.mockResolvedValueOnce({ data: fakeBytes });
 
-      const result = await generator.generateSacredAudio();
+      const result = await generator.generateAmbientAudio();
 
       expect(axios.post).toHaveBeenCalledWith(
         'https://api.elevenlabs.io/v1/sound-generation',
-        expect.objectContaining({ text: 'sacred bells prompt', duration_seconds: 15, prompt_influence: 0.3 }),
+        expect.objectContaining({ text: 'ambient prompt', duration_seconds: 15, prompt_influence: 0.3 }),
         expect.objectContaining({ responseType: 'arraybuffer' })
       );
       expect(fs.writeFile).toHaveBeenCalledWith(
-        expect.stringContaining('sacred_audio.mp3'),
+        expect.stringContaining('ambient_audio.mp3'),
         fakeBytes
       );
-      expect(result.path).toContain('sacred_audio.mp3');
+      expect(result.path).toContain('ambient_audio.mp3');
       expect(result.url).toBe(`file://${result.path}`);
     });
   });
 
-  describe('generateSciFiAudio', () => {
-    it('uses a higher prompt_influence for the sci-fi layer', async () => {
+  describe('generateTransformationAudio', () => {
+    it('uses the transformation layer prompt and prompt_influence', async () => {
       axios.post.mockResolvedValueOnce({ data: Buffer.from('bytes') });
 
-      await generator.generateSciFiAudio();
+      await generator.generateTransformationAudio();
 
       expect(axios.post).toHaveBeenCalledWith(
         'https://api.elevenlabs.io/v1/sound-generation',
-        expect.objectContaining({ text: 'quantum portal prompt', prompt_influence: 0.5 }),
+        expect.objectContaining({ text: 'transformation prompt', prompt_influence: 0.5 }),
         expect.any(Object)
       );
     });
@@ -82,8 +89,8 @@ describe('AudioGenerator', () => {
   it('wraps ElevenLabs failures with a labeled error message', async () => {
     axios.post.mockRejectedValueOnce(new Error('ElevenLabs quota exceeded'));
 
-    await expect(generator.generateSacredAudio()).rejects.toThrow(
-      'sacred audio generation failed: ElevenLabs quota exceeded'
+    await expect(generator.generateAmbientAudio()).rejects.toThrow(
+      'ambient audio generation failed: ElevenLabs quota exceeded'
     );
   });
 
@@ -104,7 +111,7 @@ describe('AudioGenerator', () => {
       expect(result).toEqual({ url: 'https://cdn.example/score.mp3', taskId: 'suno-task-1' });
       expect(axios.post).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/generate'),
-        expect.objectContaining({ prompt: 'cinematic score prompt', instrumental: true }),
+        expect.objectContaining({ prompt: 'music prompt', instrumental: true }),
         expect.any(Object)
       );
     });

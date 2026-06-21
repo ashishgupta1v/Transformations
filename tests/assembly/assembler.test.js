@@ -28,20 +28,19 @@ jest.mock('../../src/utils/retry', () => ({
   withRetry: jest.fn((fn) => fn()),
 }));
 
+// audio volumes + overlay text are theme content now. config only carries
+// engine-level encode params (assembly) and per-platform export specs.
 jest.mock('../../config/pipeline.config', () => ({
-  audio: {
-    sacred: { volume: 1.0 },
-    scifi: { volume: 0.85 },
-    music: { volume: 0.65 },
-  },
   assembly: {
-    overlayText: {
-      english: 'JAI JAGANNATH',
-      startTime: 13,
-      endTime: 15,
-      fadeIn: 0.5,
-      fadeOut: 0.5,
-    },
+    totalDuration: 15,
+    fps: 24,
+    resolution: '1080x1080',
+    codec: 'libx264',
+    preset: 'slow',
+    crf: 18,
+    pixFmt: 'yuv420p',
+    audioCodec: 'aac',
+    audioBitrate: '320k',
   },
   platforms: {
     youtube: {
@@ -63,6 +62,7 @@ jest.mock('../../config/pipeline.config', () => ({
 const axios = require('axios');
 const fs = require('fs-extra');
 const VideoAssembler = require('../../src/assembly/assembler');
+const mockTheme = require('../fixtures/mockTheme');
 
 describe('VideoAssembler', () => {
   let assembler;
@@ -71,7 +71,14 @@ describe('VideoAssembler', () => {
     jest.clearAllMocks();
     mockExec.mockImplementation((cmd, callback) => callback(null, 'stdout', ''));
     fs.stat.mockResolvedValue({ size: 10 * 1024 * 1024 });
-    assembler = new VideoAssembler();
+    assembler = new VideoAssembler(mockTheme);
+  });
+
+  describe('constructor / requireTheme guard', () => {
+    it('rejects when no theme was injected', async () => {
+      const bare = new VideoAssembler();
+      await expect(bare.mixAudio()).rejects.toThrow(/VideoAssembler requires a theme/);
+    });
   });
 
   describe('downloadAssets', () => {
@@ -82,19 +89,19 @@ describe('VideoAssembler', () => {
         phase1: 'https://cdn.example/phase1.mp4',
         phase2: 'https://cdn.example/phase2.mp4',
         phase3: 'https://cdn.example/phase3.mp4',
-        sacredAudio: 'file:///tmp/sacred_audio.mp3',
-        scifiAudio: 'file:///tmp/scifi_audio.mp3',
+        ambientAudio: 'file:///tmp/ambient_audio.mp3',
+        transformationAudio: 'file:///tmp/transformation_audio.mp3',
         musicScore: 'https://cdn.example/music.mp3',
       });
 
       // phase1, phase2, phase3, musicScore are http downloads
       expect(axios.get).toHaveBeenCalledTimes(4);
       expect(fs.writeFile).toHaveBeenCalledTimes(4);
-      // sacredAudio + scifiAudio are local file:// copies
+      // ambientAudio + transformationAudio are local file:// copies
       expect(fs.copy).toHaveBeenCalledTimes(2);
       expect(fs.copy).toHaveBeenCalledWith(
-        '/tmp/sacred_audio.mp3',
-        expect.stringContaining('sacred_audio.mp3')
+        '/tmp/ambient_audio.mp3',
+        expect.stringContaining('ambient_audio.mp3')
       );
     });
 
@@ -113,13 +120,13 @@ describe('VideoAssembler', () => {
   });
 
   describe('mixAudio', () => {
-    it('builds an ffmpeg amix command using config volumes and returns the output path', async () => {
+    it('builds an ffmpeg amix command using theme volumes and returns the output path', async () => {
       const result = await assembler.mixAudio();
 
       expect(mockExec).toHaveBeenCalledTimes(1);
       const [cmd] = mockExec.mock.calls[0];
-      expect(cmd).toContain('volume=1'); // sacred volume
-      expect(cmd).toContain('volume=0.85'); // scifi volume
+      expect(cmd).toContain('volume=1'); // ambient volume
+      expect(cmd).toContain('volume=0.85'); // transformation volume
       expect(cmd).toContain('volume=0.65'); // music volume
       expect(cmd).toContain('amix=inputs=3');
       expect(result).toContain('final_audio.mp3');
@@ -136,7 +143,10 @@ describe('VideoAssembler', () => {
       );
       expect(mockExec).toHaveBeenCalledTimes(1);
       const [cmd] = mockExec.mock.calls[0];
-      expect(cmd).toContain("text='JAI JAGANNATH'");
+      // overlay text is theme-driven (theme.overlay.primaryText/secondaryText),
+      // not a hardcoded subject-specific string.
+      expect(cmd).toContain("text='PRIMARY TEXT'");
+      expect(cmd).toContain("text='SECONDARY TEXT'");
       expect(result.path).toContain('master_output.mp4');
       expect(result.size).toBe(10 * 1024 * 1024);
       expect(result.sizeHuman).toBe('10.0MB');

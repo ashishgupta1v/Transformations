@@ -1,7 +1,8 @@
 // src/audio/generator.js
-// Handles all audio generation: ElevenLabs (sound effects) + Suno AI (music score)
-// This module was referenced by src/index.js but did not exist — built per
-// the "still needs building" list.
+// Handles all audio generation: ElevenLabs (sound effects) + Suno AI (music score).
+// Subject-specific prompts/volumes come from a theme object (see
+// themes/*.json + src/utils/themeLoader.js) passed into the constructor.
+// Engine-level tuning (polling) stays in config/pipeline.config.js.
 
 const axios = require('axios');
 const fs = require('fs-extra');
@@ -10,26 +11,36 @@ const config = require('../../config/pipeline.config');
 const { withRetry, sleep } = require('../utils/retry');
 
 class AudioGenerator {
-  constructor() {
+  constructor(theme) {
+    this.theme = theme || null;
     this.tempDir = process.env.TEMP_DIR || './temp';
     fs.ensureDirSync(this.tempDir);
   }
 
-  // ── SACRED AUDIO (ElevenLabs sound-generation) ──
-  async generateSacredAudio() {
-    logger.info('Generating sacred audio layer (ElevenLabs)');
-    const { prompt, duration } = config.audio.sacred;
-    return this._generateElevenLabsSound(prompt, duration, 'sacred');
+  requireTheme() {
+    if (!this.theme) {
+      throw new Error('AudioGenerator requires a theme — pass one to the constructor (see themes/)');
+    }
+    return this.theme;
   }
 
-  // ── SCIFI AUDIO (ElevenLabs sound-generation) ───
-  async generateSciFiAudio() {
-    logger.info('Generating sci-fi audio layer (ElevenLabs)');
-    const { prompt, duration } = config.audio.scifi;
-    return this._generateElevenLabsSound(prompt, duration, 'scifi');
+  // ── AMBIENT AUDIO (ElevenLabs sound-generation) — matches phase 1 baseline ──
+  async generateAmbientAudio() {
+    logger.info('Generating ambient audio layer (ElevenLabs)');
+    const theme = this.requireTheme();
+    const { prompt, duration, promptInfluence } = theme.audio.ambient;
+    return this._generateElevenLabsSound(prompt, duration, 'ambient', promptInfluence);
   }
 
-  async _generateElevenLabsSound(prompt, duration, label) {
+  // ── TRANSFORMATION AUDIO (ElevenLabs sound-generation) — matches phase 2 ──
+  async generateTransformationAudio() {
+    logger.info('Generating transformation audio layer (ElevenLabs)');
+    const theme = this.requireTheme();
+    const { prompt, duration, promptInfluence } = theme.audio.transformation;
+    return this._generateElevenLabsSound(prompt, duration, 'transformation', promptInfluence);
+  }
+
+  async _generateElevenLabsSound(prompt, duration, label, promptInfluence = 0.3) {
     try {
       const response = await withRetry(
         () => axios.post(
@@ -37,7 +48,7 @@ class AudioGenerator {
           {
             text: prompt,
             duration_seconds: duration,
-            prompt_influence: label === 'scifi' ? 0.5 : 0.3,
+            prompt_influence: promptInfluence,
           },
           {
             headers: {
@@ -68,7 +79,8 @@ class AudioGenerator {
   // ── MUSIC SCORE (Suno AI) ───────────────────────
   async generateMusicScore() {
     logger.info('Generating music score (Suno AI)');
-    const { prompt, duration, instrumental } = config.audio.music;
+    const theme = this.requireTheme();
+    const { prompt, duration, instrumental } = theme.audio.music;
     const baseUrl = process.env.SUNO_API_BASE_URL || 'https://api.sunoapi.org';
 
     try {
@@ -105,7 +117,7 @@ class AudioGenerator {
     }
   }
 
-  // ── POLLING: SUNO ────────────────────────────────
+  // ── POLLING: SUNO (engine-level) ─────────────────
   async pollSuno(taskId, baseUrl) {
     const { intervalMs, maxAttempts } = config.polling;
     let attempts = 0;
