@@ -302,11 +302,6 @@ program
     console.log(chalk.green('Scheduler running. Press Ctrl+C to stop.'));
   });
 
-program.parse(process.argv);
-
-// Default: run generate if no command
-if (process.argv.length === 2) {
-  runPipeline({});
-}
-
-module.exports = { runPipeline, runAssembleOnly };
+// Only drive the Commander CLI (and the "no command = run generate" default)
+// when this file is executed directly as `node src/index.js ...`. Other
+// modules — notably a
