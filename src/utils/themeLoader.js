@@ -58,11 +58,14 @@ function validateTheme(theme, sourcePath) {
     throw new Error(`Theme "${sourcePath}" is missing required field(s): ${missingTop.join(', ')}`);
   }
 
-  const missingPhases = REQUIRED_PHASES.filter((p) => !theme.phases[p]);
+  const isSingleShot = theme.id?.endsWith('-10s') || sourcePath.endsWith('-10s.json');
+  const expectedPhases = isSingleShot ? ['phase1'] : REQUIRED_PHASES;
+
+  const missingPhases = expectedPhases.filter((p) => !theme.phases[p]);
   if (missingPhases.length) {
     throw new Error(`Theme "${sourcePath}" is missing phases: ${missingPhases.join(', ')}`);
   }
-  for (const phaseKey of REQUIRED_PHASES) {
+  for (const phaseKey of expectedPhases) {
     const phase = theme.phases[phaseKey];
     if (!phase.prompt) throw new Error(`Theme "${sourcePath}" phases.${phaseKey} is missing a "prompt"`);
     if (!phase.duration) throw new Error(`Theme "${sourcePath}" phases.${phaseKey} is missing a "duration"`);
@@ -92,8 +95,24 @@ function validateTheme(theme, sourcePath) {
 /**
  * Load and validate a theme by id or path. Throws with a helpful message
  * (including the list of available themes) if not found or invalid.
+ *
+ * `overrides` generalizes the long-standing BASE_IMAGE_URL_OVERRIDE env-var
+ * pattern into a per-run mechanism so a user can supply their own images,
+ * a target/reference image, or per-phase source video — without editing
+ * theme JSON — via CLI flags (src/index.js) or the admin API
+ * (admin/server.js POST /api/pipeline/start body). Supported keys:
+ *   - baseImageUrl        (top-level, all phases default to this)
+ *   - targetImageUrl       (top-level, anchors Tier C's Aleph transform)
+ *   - phase1ImageUrl / phase2ImageUrl / phase3ImageUrl
+ *       (per-phase imageUrl override)
+ *   - phase2VideoInputUrl  (Tier C: source video fed to Aleph, instead of
+ *                           Phase 1's actual rendered output)
+ *   - phase2ReferenceImageUrl (Tier C: reference image for Aleph, instead
+ *                           of targetImageUrl)
+ * Any key not provided is left untouched (theme JSON / env var still wins
+ * over "no override").
  */
-function loadTheme(themeIdOrPath) {
+function loadTheme(themeIdOrPath, overrides = {}) {
   if (!themeIdOrPath) {
     throw new Error(`No theme specified. Pass --theme <name>. Available themes: ${describeAvailable()}`);
   }
@@ -114,12 +133,59 @@ function loadTheme(themeIdOrPath) {
 
   // Optional per-deployment override so the same theme file can be reused
   // across environments without editing committed JSON (e.g. a staging
-  // bucket URL vs. production).
-  if (process.env.BASE_IMAGE_URL_OVERRIDE) {
-    theme = { ...theme, baseImageUrl: process.env.BASE_IMAGE_URL_OVERRIDE };
+  // bucket URL vs. production). Generalized env var also still works.
+  const baseImageUrl = overrides.baseImageUrl || process.env.BASE_IMAGE_URL_OVERRIDE;
+  if (baseImageUrl) {
+    theme = { ...theme, baseImageUrl };
+  }
+  if (overrides.targetImageUrl) {
+    theme = { ...theme, targetImageUrl: overrides.targetImageUrl };
   }
 
-  logger.info('Theme loaded', { id: theme.id, file: path.basename(themePath) });
+  const phaseOverrideMap = {
+    phase1: overrides.phase1BaseImageUrl || overrides.phase1ImageUrl,
+    phase2: overrides.phase2BaseImageUrl || overrides.phase2ImageUrl,
+    phase3: overrides.phase3BaseImageUrl || overrides.phase3ImageUrl,
+  };
+  const phaseTargetOverrideMap = {
+    phase1: overrides.phase1TargetImageUrl,
+    phase2: overrides.phase2TargetImageUrl,
+    phase3: overrides.phase3TargetImageUrl,
+  };
+  const hasPhaseOverrides = Object.values(phaseOverrideMap).some(Boolean) ||
+    Object.values(phaseTargetOverrideMap).some(Boolean) ||
+    overrides.phase2VideoInputUrl || overrides.phase2ReferenceImageUrl || overrides.moduleType;
+
+  if (hasPhaseOverrides) {
+    theme = { ...theme, phases: { ...theme.phases } };
+    for (const [phaseKey, imageUrl] of Object.entries(phaseOverrideMap)) {
+      if (imageUrl && theme.phases[phaseKey]) {
+        theme.phases[phaseKey] = { ...theme.phases[phaseKey], imageUrl };
+      }
+    }
+    for (const [phaseKey, targetImageUrl] of Object.entries(phaseTargetOverrideMap)) {
+      if (targetImageUrl && theme.phases[phaseKey]) {
+        theme.phases[phaseKey] = { ...theme.phases[phaseKey], targetImageUrl };
+      }
+    }
+    if (theme.phases.phase2) {
+      if (overrides.phase2VideoInputUrl) {
+        theme.phases.phase2 = { ...theme.phases.phase2, videoInputUrl: overrides.phase2VideoInputUrl };
+      }
+      if (overrides.phase2ReferenceImageUrl) {
+        theme.phases.phase2 = { ...theme.phases.phase2, referenceImageUrl: overrides.phase2ReferenceImageUrl };
+      }
+    }
+    
+    // Apply Module Selection
+    if (overrides.moduleType === 'module1' && theme.phases.phase1) {
+      theme.phases.phase1.duration = 10;
+      delete theme.phases.phase2;
+      delete theme.phases.phase3;
+    }
+  }
+
+  logger.info('Theme loaded', { id: theme.id, file: path.basename(themePath), overridesApplied: Object.keys(overrides).filter((k) => overrides[k]) });
   return theme;
 }
 

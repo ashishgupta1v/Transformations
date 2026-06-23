@@ -32,6 +32,27 @@ const consoleFormat = winston.format.printf(({ level, message, timestamp, ...met
   return `${chalk.dim(timestamp)} ${colorize(level.toUpperCase().padEnd(5))} ${message}${metaStr}`;
 });
 
+const Transport = require('winston-transport');
+const { publisher } = require('./redisPubSub');
+
+class RedisPubSubTransport extends Transport {
+  constructor(opts) {
+    super(opts);
+  }
+
+  log(info, callback) {
+    setImmediate(() => {
+      this.emit('logged', info);
+    });
+
+    const { level, message, timestamp, ...meta } = info;
+    const logData = JSON.stringify({ level, message, timestamp, meta });
+    publisher.publish('worker-logs', logData).catch(() => {});
+    
+    callback();
+  }
+}
+
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
@@ -58,6 +79,7 @@ const logger = winston.createLogger({
       maxFiles: 5,
       format: winston.format.json(),
     }),
+    new RedisPubSubTransport()
   ],
   exitOnError: false,
 });

@@ -29,11 +29,7 @@ jest.mock('../../src/utils/youtubeAuth', () => ({
   getAuthenticatedClient: jest.fn(() => ({ mockAuth: true })),
 }));
 
-// publisher.js's notifyWhatsAppStatus calls whatsapp.notifyLive({theme, path}),
-// not sendText directly — notifyLive is the theme-aware entry point.
-jest.mock('../../src/notify/whatsapp', () => ({
-  notifyLive: jest.fn().mockResolvedValue({}),
-}));
+
 
 // publishFromOutput() checks config.platforms for filenames (engine-level).
 jest.mock('../../config/pipeline.config', () => ({
@@ -79,7 +75,6 @@ jest.mock(
 
 const axios = require('axios');
 const fs = require('fs-extra');
-const whatsapp = require('../../src/notify/whatsapp');
 const storage = require('../../src/utils/storage');
 const Publisher = require('../../src/publish/publisher');
 const mockTheme = require('../fixtures/mockTheme');
@@ -185,25 +180,6 @@ describe('Publisher', () => {
     });
   });
 
-  describe('notifyWhatsAppStatus', () => {
-    it('delegates to whatsapp.notifyLive with the theme and export path', async () => {
-      const result = await publisher.notifyWhatsAppStatus({ path: './output/whatsapp_720.mp4' });
-
-      expect(result).toEqual({ notified: true });
-      expect(whatsapp.notifyLive).toHaveBeenCalledWith({
-        theme: mockTheme,
-        path: './output/whatsapp_720.mp4',
-      });
-    });
-
-    it('skips silently when no export file is provided', async () => {
-      const result = await publisher.notifyWhatsAppStatus(undefined);
-
-      expect(result).toEqual({ skipped: true });
-      expect(whatsapp.notifyLive).not.toHaveBeenCalled();
-    });
-  });
-
   describe('publishInstagram', () => {
     it('uploads to storage, creates a container, waits for it, then publishes', async () => {
       axios.post
@@ -229,7 +205,6 @@ describe('Publisher', () => {
       jest.spyOn(publisher, 'publishYouTubeShorts').mockResolvedValue({ videoId: 's1', url: 'https://youtube.com/shorts/s1' });
       jest.spyOn(publisher, 'publishTwitter').mockResolvedValue({ id: 't1' });
       jest.spyOn(publisher, 'publishFacebook').mockRejectedValue(new Error('No Facebook export file'));
-      jest.spyOn(publisher, 'notifyWhatsAppStatus').mockResolvedValue({ notified: true });
 
       const output = await publisher.publishAll({
         youtube: { path: 'a' },
@@ -237,7 +212,6 @@ describe('Publisher', () => {
         shorts: { path: 'b' },
         twitter: { path: 'c' },
         facebook: undefined,
-        whatsapp: { path: 'd' },
       });
 
       expect(output.youtube).toEqual({ success: true, videoId: 'v1', url: 'https://youtube.com/watch?v=v1' });
@@ -245,7 +219,6 @@ describe('Publisher', () => {
       expect(output.shorts).toEqual({ success: true, videoId: 's1', url: 'https://youtube.com/shorts/s1' });
       expect(output.twitter).toEqual({ success: true, id: 't1' });
       expect(output.facebook).toEqual({ success: false, error: 'No Facebook export file' });
-      expect(output.whatsapp).toEqual({ success: true, notified: true });
     });
   });
 

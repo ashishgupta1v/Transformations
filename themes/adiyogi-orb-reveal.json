@@ -1,0 +1,116 @@
+{
+  "id": "adiyogi-orb-reveal",
+  "displayName": "Adiyogi Swayambhu Reveal",
+  "subjectType": "deity",
+  "language": "en",
+  "tagline": "🔱 The Swayambhu awakening",
+  "author": "Ashish Gupta — Digital Builders",
+  "bannerTitle": "ADIYOGI SWAYAMBHU REVEAL",
+  "baseImageUrl": "",
+  "targetImageUrl": "",
+  "phases": {
+    "phase1": {
+      "name": "Phase 1 — The Mystery Build",
+      "duration": 5,
+      "provider": "fal",
+      "prompt": "Extremely close-up, shallow depth of field. Two Indian hands are holding a dark matte black sci-fi mechanical egg (with segmented panels, a silver latch, and a crescent moon symbol on the left side) at chest height. A left thumb explicitly presses a circular button indent at the bottom of the egg. The camera slowly pulls back and tilts downwards as the hands gently lower the egg to rest perfectly upright on a highly reflective grey marble ledge. Once placed, the right hand completely withdraws from the frame. Background: Giant Adiyogi Shiva statue heavily blurred in soft bokeh under an overcast daylight sky. 9:16 vertical orientation, photorealistic cinematic lighting, continuous fluid motion.",
+      "negativePrompt": "text, watermark, low quality, distortion, hard cuts"
+    },
+    "phase2": {
+      "name": "Phase 2 — Lingodbhava Transformation",
+      "duration": 5,
+      "provider": "fal",
+      "prompt": "The black sci-fi mechanical egg rests statically on the reflective marble ledge. Suddenly, its vertical seam panels mechanically fold outward laterally like the opening petals of a mechanical lotus flower. Simultaneously, a cross-shaped stabilizer base deploys with four rectangular extensions pointing outwards. As the panels flare wide open, a vertical telescoping rod rises straight up from the center core. From within this core, a miniature black Adiyogi Shiva bust (a serene male face with matted hair and a white teardrop tilak on the forehead) slowly emerges upward. The camera is locked low near ground level. The background features the giant Adiyogi statue in soft bokeh. Photorealistic, exact mechanical physics simulation, continuous smooth transformation, no human hands.",
+      "negativePrompt": "jarring cuts, human hands, cartoon, low quality, morphing artifacts, text, watermark",
+      "referenceImageUrl": "",
+      "targetImageUrl": "",
+      "videoInputUrl": ""
+    },
+    "phase3": {
+      "name": "Phase 3 — Hero Hold & Awakening",
+      "duration": 5,
+      "provider": "fal",
+      "prompt": "The mechanical panels completely fold back, fully revealing a flawless miniature black Adiyogi Shiva bust on the marble ledge. The bust seamlessly finishes assembling: large circular hoop earrings, a pearl bead necklace, and a prominent white crescent moon symbol materializing on its forehead. Directly beneath the bust, a miniature temple architecture base with pillars and a gopuram completes its formation. The miniature bust and temple base sit perfectly centered, echoing the massive real Adiyogi Shiva statue blurred majestically in the background on the exact same vertical axis. The camera performs a very slow, subtle cinematic push-in on the miniature bust. Overcast sky, photorealistic depth of field, steady and reverent composition.",
+      "negativePrompt": "abrupt movement, low quality, static empty background, text, watermark",
+      "targetImageUrl": ""
+    }
+  },
+  "audio": {
+    "ambient": {
+      "name": "Courtyard Ambience",
+      "prompt": "Deep silence, outdoor temple-courtyard ambience, distant gentle breeze, faint birds, and a distant resonant temple bell (Shankha) sounding once.",
+      "duration": 10,
+      "volume": 0.6,
+      "promptInfluence": 0.3
+    },
+    "transformation": {
+      "name": "Damaru Build",
+      "prompt": "Low ominous drone building up tension, subtle Damaru (Shiva's drum) rhythm begins slowly and builds up with a rising bass undertone, mystical and tense, three mechanical lock-clicks, then sudden silence.",
+      "duration": 10,
+      "volume": 0.6,
+      "promptInfluence": 0.4
+    },
+    "music": {
+      "name": "Divine Swell",
+      "prompt": "Majestic awe-inspiring devotional score, sudden divine swell of an Om Namah Shivaya ambient chant layered with a Tibetan singing bowl and a Carnatic nadaswaram burst, ending on a single long fading resonant OM bell.",
+      "duration": 10,
+      "volume": 0.75,
+      "instrumental": false
+    }
+  },
+  "overlay": {
+    "primaryText": "",
+    "secondaryText": "this was found at the base of adiyogi...",
+    "startTime": 3,
+    "endTime": 8,
+    "fadeIn": 0.5,
+    "fadeOut": 0.5
+  },
+  "platforms": {
+    "youtube": {
+      "title": "A Cosmic Egg Awakens Into Adiyogi Shiva 🔱",
+      "description": "Watch what happens when this ancient orb is placed in front of Adiyogi. No one placed this here. Swayambhu.\n\nIn Hindu cosmology, Shiva emerged from a pillar of infinite light.\n\n#Adiyogi #Shiva #Swayambhu #Mahadev #HinduMythology",
+      "tags": [
+        "Adiyogi",
+        "Shiva",
+        "Swayambhu",
+        "HinduMythology",
+        "Mahadev"
+      ],
+      "categoryId": "22",
+      "privacy": "public",
+      "defaultLanguage": "en"
+    },
+    "shorts": {
+      "title": "The Lingodbhava Recreated 🔱 #Shorts",
+      "description": "Some doors, only Shiva can open. #Adiyogi #Shiva #Swayambhu #Shorts",
+      "tags": [
+        "Shorts",
+        "Adiyogi",
+        "Shiva",
+        "Mahadev"
+      ],
+      "categoryId": "22",
+      "privacy": "public"
+    },
+    "instagramReel": {
+      "caption": "🔱 A cosmic egg. A Swayambhu awakening.\n\nIn the beginning, before creation, there was only this... The Lingodbhava recreated at the base of Adiyogi in Coimbatore.\n\nWhat do you feel watching this? 🙏\n\n#Adiyogi #Shiva #IshaFoundation #HinduMythology #Mahadev #SpiritualArt"
+    },
+    "twitter": {
+      "text": "🔱 Watch what happens when this cosmic egg self-activates in front of Adiyogi. Swayambhu.\n\n#Adiyogi #Shiva"
+    },
+    "facebook": {
+      "description": "🔱 A dark cosmic stone egg activates itself — and from within it, Shiva himself emerges. No hands. No explanation. The Swayambhu awakening at the Isha Foundation, Coimbatore.\n\n#Adiyogi #Shiva #Mahadev"
+    },
+    "whatsapp": {
+      "liveText": "This video of Adiyogi is making rounds... watch till the end 🙏🔱\n\n{path}"
+    }
+  },
+  "notifications": {
+    "whatsappComplete": "✅ {displayName} video COMPLETE!\n⏱️ Time: {duration} mins\n📱 {exportCount} platform versions ready\n{tagline}",
+    "whatsappError": "❌ {displayName} pipeline FAILED\n📍 Stage: {stage}\n🐛 {error}\n\nCheck logs on the server.",
+    "whatsappLive": "🕉️ New {displayName} video is live!\n\nFile ready: {path}\n{tagline}"
+  },
+  "basePrompt": "Two Indian hands of a Single person holding a dark matte black sci-fi mechanical orb/egg going to click its centre button, close-up shot, the Adiyogi Shiva statue in soft bokeh background, overcast daylight, marble surface below, shallow depth of field, 9:16 vertical video. The hands slowly lower the orb onto the reflective marble ledge. Photorealistic, cinematic, continuous single shot.\",\n",
+  "phase2Prompt": "The black sci-fi mechanical egg rests statically on the reflective marble ledge. Suddenly, its vertical seam panels mechanically fold outward laterally like the opening petals of a mechanical lotus flower. Simultaneously, a cross-shaped stabilizer base deploys with four rectangular extensions pointing outwards. As the panels flare wide open, a vertical telescoping rod rises straight up from the center core. From within this core, a miniature black Adiyogi Shiva bust (a serene male face with matted hair and a white teardrop tilak on the forehead) slowly emerges upward. The camera is locked low near ground level. The background features the giant Adiyogi statue in soft bokeh. Photorealistic, exact mechanical physics simulation, continuous smooth transformation, no human hands."
+}

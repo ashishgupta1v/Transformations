@@ -29,20 +29,23 @@ async function saveLog(log) {
   await fs.writeJson(LOG_FILE, log, { spaces: 2 });
 }
 
-/**
- * Record one pipeline run's cost. `usage` is a map of provider -> call count,
- * e.g. { runway: 1, kling: 1, pika: 1, elevenlabs: 2, suno: 1, replicate: 1 }
- */
 async function recordRun(usage, meta = {}) {
   const log = await loadLog();
 
   const breakdown = {};
   let total = 0;
-  for (const [provider, calls] of Object.entries(usage)) {
-    const perCall = config.costEstimates[provider] || 0;
-    const cost = perCall * calls;
-    breakdown[provider] = { calls, perCall, cost: Number(cost.toFixed(4)) };
-    total += cost;
+  for (const [provider, value] of Object.entries(usage)) {
+    if (value && typeof value === 'object') {
+      const { calls = 0, totalCost = 0 } = value;
+      breakdown[provider] = { calls, perCall: calls ? Number((totalCost / calls).toFixed(4)) : 0, cost: Number(totalCost.toFixed(4)) };
+      total += totalCost;
+    } else {
+      const calls = value;
+      const perCall = config.costEstimates[provider] || 0;
+      const cost = perCall * calls;
+      breakdown[provider] = { calls, perCall, cost: Number(cost.toFixed(4)) };
+      total += cost;
+    }
   }
 
   const run = {
@@ -59,17 +62,18 @@ async function recordRun(usage, meta = {}) {
   return run;
 }
 
-/**
- * Summarize spend across all logged runs, with month-to-date and budget
- * tier context.
- */
-async function getSummary() {
+async function getMonthSpend() {
   const log = await loadLog();
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
   const monthRuns = log.runs.filter((r) => new Date(r.timestamp) >= monthStart);
   const monthTotal = monthRuns.reduce((sum, r) => sum + r.total, 0);
+  return { monthRuns, monthTotal };
+}
+
+async function getSummary() {
+  const log = await loadLog();
+  const { monthRuns, monthTotal } = await getMonthSpend();
   const allTimeTotal = log.runs.reduce((sum, r) => sum + r.total, 0);
 
   const matchingTier = config.budgetTiers
@@ -85,4 +89,27 @@ async function getSummary() {
   };
 }
 
-module.exports = { recordRun, getSummary, loadLog };
+async function checkBudgetCircuitBreaker(estimatedAdditionalCost = 0) {
+  const { monthTotal } = await getMonthSpend();
+  const cap = config.circuitBreaker.budgetCapUsd;
+  const projected = monthTotal + estimatedAdditionalCost;
+  const allowed = projected <= cap;
+
+  if (!allowed) {
+    logger.warn('Budget circuit breaker tripped', {
+      monthSpend: Number(monthTotal.toFixed(2)),
+      cap,
+      projected: Number(projected.toFixed(2)),
+      estimatedAdditionalCost,
+    });
+  }
+
+  return {
+    allowed,
+    monthSpend: Number(monthTotal.toFixed(2)),
+    cap,
+    projected: Number(projected.toFixed(2)),
+  };
+}
+
+module.exports = { recordRun, getSummary, loadLog, getMonthSpend, checkBudgetCircuitBreaker };

@@ -1,0 +1,37 @@
+{
+  "id": "peaceful-garden-in-the-clouds",
+  "displayName": "Peaceful Garden in the Clouds",
+  "subjectType": "product",
+  "tagline": "Serenity Above the Clouds",
+  "phases": {
+    "phase1": {
+      "name": "Baseline",
+      "prompt": "A tranquil garden set high above the clouds, featuring delicate floating stepping stones leading through the mist. The garden is filled with vibrant cherry blossom trees gently swaying in the soft breeze. Sunlight filters through the clouds, casting dappled patterns on the stones below. The scene is ethereal and serene, evoking a sense of peace and harmony.",
+      "duration": 5
+    },
+    "phase2": {
+      "name": "Transformation",
+      "prompt": "As the scene shifts, the garden begins to transform into a breathtaking Sci-Fi spectacle. The cherry blossoms glow with an iridescent light, their petals swirling in the air with a luminescent shimmer. The stepping stones pulse with a gentle energy as they shift colors, floating smoothly through the mist. The clouds part to reveal nebulae and stars, creating an otherworldly backdrop. This surreal transformation elevates the garden into a realm of fantasy and wonder.",
+      "duration": 5
+    },
+    "phase3": {
+      "name": "Resolution",
+      "prompt": "The scene returns to the original garden, but now the cherry blossoms glisten with a dew-like sparkle, their delicate beauty magnified. The stepping stones remain as peaceful as ever, guiding through the tranquil dreamscape. The sunlight now has a golden warmth, highlighting the harmonious balance of nature and sky. This final hero shot captures the essence of serenity and the beauty of imagination.",
+      "duration": 5
+    }
+  },
+  "audio": {
+    "ambientPrompt": "Gentle breeze rustling through cherry blossom trees, soft whispers of clouds drifting by, subtle sound of flowing water from an unseen stream.",
+    "transformationPrompt": "Futuristic shimmering sounds mixed with celestial chimes and a gentle crescendo of energy as the garden transforms.",
+    "musicScorePrompt": "Delicate and calming instrumental, emphasizing strings and wind instruments to evoke a sense of peace and elevation."
+  },
+  "platforms": {
+    "instagramReel": {
+      "caption": "Step into a garden among the clouds and let serenity wash over you. 🍃✨ #PeacefulGardens #CherryBlossoms #Cloudscapes"
+    },
+    "youtube": {
+      "title": "Explore the Serene Cloud Garden",
+      "description": "Join us on a journey to a tranquil garden nestled in the clouds. Experience the peace of floating stepping stones and cherry blossoms, along with a mesmerizing Sci-Fi transformation. Relax and let your mind wander in this dreamlike escape."
+    }
+  }
+}
