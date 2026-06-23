@@ -1,0 +1,59 @@
+{
+  "id": "miniature-rath-yatra-transformation",
+  "displayName": "Miniature Rath Yatra Transformation",
+  "subjectType": "product",
+  "tagline": "Witness an extraordinary transformation of divine elegance.",
+  "phases": {
+    "phase1": {
+      "name": "Baseline",
+      "prompt": "Extremely close-up, shallow depth of field. Two Indian male hands gently lower a dark matte neem-wood cube onto a highly reflective grey marble ledge, then fully withdraw. Photorealistic, ultra-detailed textures on wood, metal, fabric, and wet marble; cinematic golden-hour color grading with warm gold highlights and cool shadow contrast.",
+      "duration": 5
+    },
+    "phase2": {
+      "name": "Transformation",
+      "prompt": "As the cube’s vertical seam panels fold outward, a smooth mechanical transformation unfolds: petals open like a lotus, a stabilizer base with extensions locks into place. Three synchronized telescoping pedestals rise, assembling boxed deity forms with mechanical precision. Jagannath unit with deep-blue painted eyes, Balabhadra unit with oval eyes, and Subhadra unit with almond-shaped eyes emerge. Simultaneously, miniature raths with ornate wheel assemblies, decorative canopies, and draped garlands deploy. Mechanical seams, gears, and pistons articulate with realistic physics, soft pneumatic hisses, and micro-sparks. Halo of light crowns each deity-box as oil lamps ignite in sequence. The Jagannath Temple’s facade softly out of focus, warm golden-hour lighting aligns perfectly with the tableau. Camera performs a slow push-in reveal from macro foreground to complete miniature Rath tableau. Vertical alignment with golden sunlight through clouds adds divinity.",
+      "duration": 5
+    },
+    "phase3": {
+      "name": "Resolution",
+      "prompt": "The cinematic push-in completes, revealing the intricate Rath tableau in full glory. Each deity-box pulses with subtle power, halo lights gleam softly above. Flower petals and a ring of small oil lamps create an ethereal boundary around the scene. Highlighted Jagannath Temple’s spire and facade in serene golden-hour backdrop ensure focus returns to the divine miniature spectacle. Ultra-detailed textures and lighting accentuate every detail, providing photorealistic finishing touches.",
+      "duration": 5
+    }
+  },
+  "audio": {
+    "ambient": {
+      "name": "Ambient",
+      "prompt": "Gentle ambient sounds of a serene evening, subtle temple bells ringing, and the soft hum of mechanical precision from opening panels.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "transformation": {
+      "name": "Transformation",
+      "prompt": "Intricate mechanical whirs, slides, and locks; occasional gentle pneumatic releases and soft spark effects accompany the transformation in a syncopated sequence.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "music": {
+      "name": "Music Score",
+      "prompt": "A soothing instrumental with traditional Indian motifs incorporated into a modern orchestral arrangement, creating a harmonious balance with the visual tableau.",
+      "duration": 15,
+      "volume": 0.7,
+      "instrumental": true
+    }
+  },
+  "platforms": {
+    "instagramReel": {
+      "caption": "Witness a divine marvel as the miniature Rath Yatra unfolds. #MiniatureRathYatra #DivineCraft #GoldenHourMagic #SpiritualJourney"
+    },
+    "youtube": {
+      "title": "Witness the Miniature Rath Yatra: A Mechanical Marvel",
+      "description": "Experience the exquisitely detailed transformation of the Miniature Rath Yatra, where divine deities emerge in an orchestrated display of mechanical grace and Indian tradition. Capturing the essence of golden-hour magic and spiritual artistry."
+    }
+  },
+  "baseImageUrl": "",
+  "targetImageUrl": "",
+  "overlay": {
+    "primaryText": "",
+    "secondaryText": "Witness an extraordinary transformation of divine elegance."
+  }
+}

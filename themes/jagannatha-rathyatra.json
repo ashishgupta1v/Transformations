@@ -35,7 +35,7 @@
       "name": "Sacred Emergence",
       "prompt": "Sacred Jagannatha Temple ambience. Deep resonant conch shell drone. Massive brass temple bells ringing. Distant thousands chanting Hari Bol rhythmically. Mardala clay drum rhythmic heartbeat. Joyous and deeply spiritual.",
       "duration": 15,
-      "volume": 1.0,
+      "volume": 1,
       "promptInfluence": 0.4
     },
     "transformation": {
@@ -104,5 +104,6 @@
     "whatsappComplete": "✅ {displayName} video COMPLETE!\n⏱️ Time: {duration} mins\n📱 {exportCount} platform versions ready\n{tagline}",
     "whatsappError": "❌ {displayName} pipeline FAILED\n📍 Stage: {stage}\n🐛 {error}\n\nCheck logs on the server.",
     "whatsappLive": "🚩 New {displayName} video is live!\n\nFile ready: {path}\n{tagline}"
-  }
+  },
+  "targetImageUrl": ""
 }

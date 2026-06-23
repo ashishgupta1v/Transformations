@@ -21,9 +21,25 @@
     }
   },
   "audio": {
-    "ambientPrompt": "The sound of bustling crowds and distant traffic in a futuristic city setting. Soft rainfall and echoes of footsteps on wet pavement.",
-    "transformationPrompt": "Synthesized electronic sounds that build dramatically with suspense as the sneaker's transformation commences, creating an aura of futuristic wonder.",
-    "musicScorePrompt": "An instrumental score featuring synthetic beats and harmonious melodies that evoke a sense of futuristic exploration and innovation."
+    "ambient": {
+      "name": "Ambient",
+      "prompt": "The sound of bustling crowds and distant traffic in a futuristic city setting. Soft rainfall and echoes of footsteps on wet pavement.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "transformation": {
+      "name": "Transformation",
+      "prompt": "Synthesized electronic sounds that build dramatically with suspense as the sneaker's transformation commences, creating an aura of futuristic wonder.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "music": {
+      "name": "Music Score",
+      "prompt": "An instrumental score featuring synthetic beats and harmonious melodies that evoke a sense of futuristic exploration and innovation.",
+      "duration": 15,
+      "volume": 0.7,
+      "instrumental": true
+    }
   },
   "platforms": {
     "instagramReel": {
@@ -33,5 +49,11 @@
       "title": "Unveiling the Neon Cyberpunk Sneaker in Neo-Tokyo",
       "description": "Discover the allure of the glowing neon sneaker that hovers above the futuristic streets of Neo-Tokyo. Experience a dramatic transformation captured in a world where fashion meets technology. Join us on this journey through a cyberpunk paradise."
     }
+  },
+  "baseImageUrl": "",
+  "targetImageUrl": "",
+  "overlay": {
+    "primaryText": "",
+    "secondaryText": "Step into the future with glowing precision."
   }
 }

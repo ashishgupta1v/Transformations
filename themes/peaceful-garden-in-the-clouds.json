@@ -21,9 +21,25 @@
     }
   },
   "audio": {
-    "ambientPrompt": "Gentle breeze rustling through cherry blossom trees, soft whispers of clouds drifting by, subtle sound of flowing water from an unseen stream.",
-    "transformationPrompt": "Futuristic shimmering sounds mixed with celestial chimes and a gentle crescendo of energy as the garden transforms.",
-    "musicScorePrompt": "Delicate and calming instrumental, emphasizing strings and wind instruments to evoke a sense of peace and elevation."
+    "ambient": {
+      "name": "Ambient",
+      "prompt": "Gentle breeze rustling through cherry blossom trees, soft whispers of clouds drifting by, subtle sound of flowing water from an unseen stream.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "transformation": {
+      "name": "Transformation",
+      "prompt": "Futuristic shimmering sounds mixed with celestial chimes and a gentle crescendo of energy as the garden transforms.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "music": {
+      "name": "Music Score",
+      "prompt": "Delicate and calming instrumental, emphasizing strings and wind instruments to evoke a sense of peace and elevation.",
+      "duration": 15,
+      "volume": 0.7,
+      "instrumental": true
+    }
   },
   "platforms": {
     "instagramReel": {
@@ -33,5 +49,11 @@
       "title": "Explore the Serene Cloud Garden",
       "description": "Join us on a journey to a tranquil garden nestled in the clouds. Experience the peace of floating stepping stones and cherry blossoms, along with a mesmerizing Sci-Fi transformation. Relax and let your mind wander in this dreamlike escape."
     }
+  },
+  "baseImageUrl": "",
+  "targetImageUrl": "",
+  "overlay": {
+    "primaryText": "",
+    "secondaryText": "Serenity Above the Clouds"
   }
 }

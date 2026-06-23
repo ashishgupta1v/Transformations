@@ -7,7 +7,6 @@
   "author": "Your Brand Studio",
   "bannerTitle": "NOVA X1 LAUNCH PIPELINE",
   "baseImageUrl": "https://your-bucket.compat.objectstorage.region.oraclecloud.com/nova_x1_base.png",
-
   "phases": {
     "phase1": {
       "name": "Studio Baseline",
@@ -31,13 +30,12 @@
       "negativePrompt": "abrupt, jarring, low quality"
     }
   },
-
   "audio": {
     "ambient": {
       "name": "Studio Ambient",
       "prompt": "Subtle premium studio ambience, soft whoosh as camera glides, light synth pad, minimal percussion ticks, clean commercial sound design",
       "duration": 15,
-      "volume": 1.0,
+      "volume": 1,
       "promptInfluence": 0.3
     },
     "transformation": {
@@ -55,7 +53,6 @@
       "instrumental": true
     }
   },
-
   "overlay": {
     "primaryText": "NOVA RUNNER X1",
     "secondaryText": "Available Now ⚡",
@@ -64,12 +61,18 @@
     "fadeIn": 0.5,
     "fadeOut": 0.5
   },
-
   "platforms": {
     "youtube": {
       "title": "Nova Runner X1 — The Future of Running 👟⚡ Official Launch Film",
       "description": "⚡👟 THE FUTURE OF RUNNING IS HERE ⚡👟\n\nIntroducing the Nova Runner X1 — engineered for speed, built for tomorrow.\n\n🔵 Adaptive energy-return sole\n💡 Fiber-optic lace lighting\n📊 Built-in performance tracking\n🚀 Available in 6 colorways\n\nNOVA X1 — STEP INTO THE FUTURE\n\nShop now at yourbrand.example.com\n\n#NovaX1 #SneakerLaunch #FutureOfRunning #ProductLaunch #TechSneakers",
-      "tags": ["NovaX1", "SneakerLaunch", "ProductLaunch", "Sneakers", "TechWear", "AIVideo"],
+      "tags": [
+        "NovaX1",
+        "SneakerLaunch",
+        "ProductLaunch",
+        "Sneakers",
+        "TechWear",
+        "AIVideo"
+      ],
       "categoryId": "22",
       "privacy": "public",
       "defaultLanguage": "en"
@@ -77,7 +80,12 @@
     "shorts": {
       "title": "Nova Runner X1 Reveal 👟⚡ #Shorts",
       "description": "The future of running has arrived. #NovaX1 #Shorts #SneakerLaunch",
-      "tags": ["Shorts", "NovaX1", "SneakerLaunch", "TechSneakers"],
+      "tags": [
+        "Shorts",
+        "NovaX1",
+        "SneakerLaunch",
+        "TechSneakers"
+      ],
       "categoryId": "22",
       "privacy": "public"
     },
@@ -94,10 +102,10 @@
       "liveText": "New {displayName} video is live!"
     }
   },
-
   "notifications": {
     "whatsappComplete": "✅ {displayName} video COMPLETE!\n⏱️ Time: {duration} mins\n📱 {exportCount} platform versions ready\n{tagline}",
     "whatsappError": "❌ {displayName} pipeline FAILED\n📍 Stage: {stage}\n🐛 {error}\n\nCheck logs on the server.",
     "whatsappLive": "👟⚡ New {displayName} video is live!\n\nFile ready: {path}\n{tagline}"
-  }
+  },
+  "targetImageUrl": ""
 }

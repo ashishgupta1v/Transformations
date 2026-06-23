@@ -21,9 +21,25 @@
     }
   },
   "audio": {
-    "ambientPrompt": "The distant sounds of bustling city life mixed with the gentle patter of rain, creating a tranquil yet dynamic urban atmosphere.",
-    "transformationPrompt": "A crescendo of synthetic pulses and electric hums, as if technology itself is alive, echoed by the distant rumble of thunder and the sharp crackle of high-voltage energy.",
-    "musicScorePrompt": "A progressive, futuristic instrumental track with a blend of synthwave and orchestral elements, gracefully transitioning from mysterious undertones to a triumphant, uplifting climax."
+    "ambient": {
+      "name": "Ambient",
+      "prompt": "The distant sounds of bustling city life mixed with the gentle patter of rain, creating a tranquil yet dynamic urban atmosphere.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "transformation": {
+      "name": "Transformation",
+      "prompt": "A crescendo of synthetic pulses and electric hums, as if technology itself is alive, echoed by the distant rumble of thunder and the sharp crackle of high-voltage energy.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "music": {
+      "name": "Music Score",
+      "prompt": "A progressive, futuristic instrumental track with a blend of synthwave and orchestral elements, gracefully transitioning from mysterious undertones to a triumphant, uplifting climax.",
+      "duration": 15,
+      "volume": 0.7,
+      "instrumental": true
+    }
   },
   "platforms": {
     "instagramReel": {
@@ -33,5 +49,11 @@
       "title": "Experience the Cyberpunk Revolution: The Neon Sneaker",
       "description": "Dive into a mesmerizing visual journey where futuristic fashion meets electric dreams. Explore the transformation of a neon sneaker against the backdrop of a rainy Neo-Tokyo. See every detail and feel the energy. Subscribe for more futuristic unveilings."
     }
+  },
+  "baseImageUrl": "",
+  "targetImageUrl": "",
+  "overlay": {
+    "primaryText": "",
+    "secondaryText": "The Future of Footwear: A Neon Dream"
   }
 }

@@ -18,6 +18,7 @@ jest.mock('fs-extra', () => ({
   copy: jest.fn().mockResolvedValue(),
   writeFile: jest.fn().mockResolvedValue(),
   stat: jest.fn().mockResolvedValue({ size: 10 * 1024 * 1024 }),
+  existsSync: jest.fn().mockReturnValue(true),
 }), { virtual: true });
 
 jest.mock('axios', () => ({

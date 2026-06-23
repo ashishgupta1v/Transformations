@@ -1,0 +1,58 @@
+{
+  "id": "cyberpunk-coffee-shop-mars",
+  "displayName": "Cyberpunk Coffee Shop on Mars",
+  "subjectType": "product",
+  "tagline": "Sip futuristic brews surrounded by Martian allure",
+  "baseImageUrl": "",
+  "phases": {
+    "phase1": {
+      "name": "Baseline",
+      "prompt": "A vibrant futuristic coffee shop on the Mars landscape, where neon lights illuminate the surroundings. The shop has an ultra-modern design with transparent walls, nestled amidst the red sand dunes of Mars. The scene is filled with distant futuristic cityscapes visible through the atmospheric haze. High-tech coffee machines can be seen, and patrons in cybernetic attire are enjoying their drinks.",
+      "duration": 5
+    },
+    "phase2": {
+      "name": "Transformation",
+      "prompt": "The coffee shop transforms as the Martian environment reacts to the cyberpunk energy. Neon signs flicker with intensity against the red Martian sky. The sand dunes begin to shimmer, reflecting neon hues, while hovering drones deliver coffee cups. The shop's walls morph with holographic displays, showcasing Martian art and alien flora.",
+      "duration": 5
+    },
+    "phase3": {
+      "name": "Resolution",
+      "prompt": "The hero shot zooms out to reveal the grand splendor of the coffee shop against the sweeping Martian landscape, the glowing neon signs becoming a beacon in the dim Martian twilight. The shop's logo, in elegant neon, becomes the focal point, shining brilliantly as patrons continue to enjoy their Martian brews.",
+      "duration": 5
+    }
+  },
+  "audio": {
+    "ambient": {
+      "name": "Martian Coffee Shop Atmosphere",
+      "prompt": "Subtle background sounds of futuristic coffee machines mixed with distant Martian winds, soft chatter from patrons in a high-tech environment, and the hum of neon lights.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "transformation": {
+      "name": "Neon Transformation Soundscape",
+      "prompt": "Electrifying hums and clinks of transforming machinery, the fizz of neon lights flaring to life, and an underlying rhythmic pulse reflecting the dynamic energy of a cyberpunk transformation.",
+      "duration": 15,
+      "volume": 0.6
+    },
+    "music": {
+      "name": "Cyberpunk Mars Melody",
+      "prompt": "A synthesized, futuristic instrumental with deep bass lines and high-pitched electronic tones, echoing the theme of a vibrant and dynamic Martian coffee shop.",
+      "duration": 15,
+      "volume": 0.7,
+      "instrumental": true
+    }
+  },
+  "overlay": {
+    "primaryText": "Cyberpunk Coffee Shop",
+    "secondaryText": "Sip futuristic brews surrounded by Martian allure"
+  },
+  "platforms": {
+    "instagramReel": {
+      "caption": "Explore a cyberpunk wonderland at our coffee shop on Mars! ☕️🔴✨ #CyberpunkCafe #MartianBrew #FuturisticFlavors"
+    },
+    "youtube": {
+      "title": "Journey to a Cyberpunk Coffee Shop on Mars",
+      "description": "Take a virtual tour of the most iconic coffee shop on Mars, where neon lights and red sand dunes create a stunning futuristic ambiance. Discover the technology and flavors that await you in this cyberpunk paradise."
+    }
+  }
+}

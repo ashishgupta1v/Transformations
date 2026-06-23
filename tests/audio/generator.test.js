@@ -4,7 +4,7 @@
 // (apipass.app) to muapi.ai's suno-create-music model, using the same
 // submit/poll contract as src/video/generator.js (POST /api/v1/{model},
 // GET /api/v1/predictions/{id}/result). ElevenLabs sound-generation tests
-// (ambient/transformation) are unaffected by this migration.
+// (ambient/transformation) call fal-ai's text-to-sound model.
 
 jest.mock('../../src/utils/logger', () => ({
   info: jest.fn(),
@@ -46,8 +46,8 @@ const SUNO_URL = `${MUAPI_BASE_URL}/${SUNO_MODEL}`;
 
 beforeEach(() => {
   process.env.MUAPI_API_KEY = 'test-muapi-key';
-  process.env.ELEVENLABS_API_KEY = 'test-elevenlabs-key'; // exercise the real axios.post path, not the mock fallback
-  delete process.env.MUAPI_BASE_URL; // exercise the default base URL constant
+  process.env.FAL_API_KEY = 'test-fal-key:secret'; // set dummy key to execute real code path
+  delete process.env.MUAPI_BASE_URL;
 });
 
 describe('AudioGenerator', () => {
@@ -71,15 +71,17 @@ describe('AudioGenerator', () => {
   describe('generateAmbientAudio', () => {
     it('posts to ElevenLabs sound-generation and writes the mp3 locally', async () => {
       const fakeBytes = Buffer.from('fake-mp3-bytes');
-      axios.post.mockResolvedValueOnce({ data: fakeBytes });
+      axios.post.mockResolvedValueOnce({ data: { audio_url: 'https://cdn.example/ambient.mp3' } });
+      axios.get.mockResolvedValueOnce({ data: fakeBytes });
 
       const result = await generator.generateAmbientAudio();
 
       expect(axios.post).toHaveBeenCalledWith(
-        'https://api.elevenlabs.io/v1/sound-generation',
-        expect.objectContaining({ text: 'ambient prompt', duration_seconds: 15, prompt_influence: 0.3 }),
-        expect.objectContaining({ responseType: 'arraybuffer' })
+        'https://fal.run/fal-ai/elevenlabs/text-to-sound',
+        expect.objectContaining({ prompt: 'ambient prompt', duration: 15 }),
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Key test-fal-key:secret' }) })
       );
+      expect(axios.get).toHaveBeenCalledWith('https://cdn.example/ambient.mp3', { responseType: 'arraybuffer' });
       expect(fs.writeFile).toHaveBeenCalledWith(
         expect.stringContaining('ambient_audio.mp3'),
         fakeBytes
@@ -90,14 +92,15 @@ describe('AudioGenerator', () => {
   });
 
   describe('generateTransformationAudio', () => {
-    it('uses the transformation layer prompt and prompt_influence', async () => {
-      axios.post.mockResolvedValueOnce({ data: Buffer.from('bytes') });
+    it('uses the transformation layer prompt and duration', async () => {
+      axios.post.mockResolvedValueOnce({ data: { url: 'https://cdn.example/transform.mp3' } });
+      axios.get.mockResolvedValueOnce({ data: Buffer.from('bytes') });
 
       await generator.generateTransformationAudio();
 
       expect(axios.post).toHaveBeenCalledWith(
-        'https://api.elevenlabs.io/v1/sound-generation',
-        expect.objectContaining({ text: 'transformation prompt', prompt_influence: 0.5 }),
+        'https://fal.run/fal-ai/elevenlabs/text-to-sound',
+        expect.objectContaining({ prompt: 'transformation prompt', duration: 15 }),
         expect.any(Object)
       );
     });
@@ -175,9 +178,6 @@ describe('AudioGenerator', () => {
 
     it('throws a wrapped error when the muapi.ai submit response has no request_id/id', async () => {
       axios.post.mockResolvedValueOnce({ data: {} });
-      // No predictionId guard exists in generateMusicScore (unlike the video
-      // generator's submitMuapi) — an unset predictionId surfaces as a
-      // generic poll-time failure, which is still caught and wrapped.
       await expect(generator.generateMusicScore()).rejects.toThrow(
         /Music score generation failed:/
       );

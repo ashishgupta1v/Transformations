@@ -47,15 +47,20 @@ async function generateThemeFromPrompt(userPrompt) {
       "displayName": "Readable Name",
       "subjectType": "product",
       "tagline": "Short tagline",
+      "baseImageUrl": "",
       "phases": {
         "phase1": { "name": "Baseline", "prompt": "Highly detailed Runway prompt", "duration": 5 },
         "phase2": { "name": "Transformation", "prompt": "Highly detailed Kling sci-fi prompt", "duration": 5 },
         "phase3": { "name": "Resolution", "prompt": "Highly detailed Pika hero shot prompt", "duration": 5 }
       },
       "audio": {
-        "ambientPrompt": "ElevenLabs prompt for phase 1",
-        "transformationPrompt": "ElevenLabs prompt for phase 2",
-        "musicScorePrompt": "Suno AI instrumental prompt"
+        "ambient": { "name": "Ambient Sound", "prompt": "ElevenLabs prompt for phase 1", "duration": 15, "volume": 0.6 },
+        "transformation": { "name": "Transformation Sound", "prompt": "ElevenLabs prompt for phase 2", "duration": 15, "volume": 0.6 },
+        "music": { "name": "Music Score", "prompt": "Suno AI instrumental prompt", "duration": 15, "volume": 0.7, "instrumental": true }
+      },
+      "overlay": {
+        "primaryText": "",
+        "secondaryText": "tagline"
       },
       "platforms": {
         "instagramReel": { "caption": "Viral IG caption with hashtags" },

@@ -117,7 +117,17 @@ function loadTheme(themeIdOrPath, overrides = {}) {
     throw new Error(`No theme specified. Pass --theme <name>. Available themes: ${describeAvailable()}`);
   }
 
-  const themePath = resolveThemePath(themeIdOrPath);
+  let themePath = resolveThemePath(themeIdOrPath);
+  if (!themePath || !fs.existsSync(themePath)) {
+    if (typeof themeIdOrPath === 'string' && themeIdOrPath.endsWith('-10s')) {
+      const baseThemeId = themeIdOrPath.replace(/-10s$/, '');
+      const fallbackPath = resolveThemePath(baseThemeId);
+      if (fallbackPath && fs.existsSync(fallbackPath)) {
+        themePath = fallbackPath;
+      }
+    }
+  }
+
   if (!themePath || !fs.existsSync(themePath)) {
     throw new Error(`Theme not found: "${themeIdOrPath}". Available themes: ${describeAvailable()}`);
   }
