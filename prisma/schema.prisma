@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  workspaces Workspace[]
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  themes    Theme[]
+  runs      VideoRun[]
+}
+
+model Theme {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String
+  displayName String
+  config      Json     // The actual theme JSON content
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  runs        VideoRun[]
+}
+
+model VideoRun {
+  id          String   @id @default(uuid())
+  workspaceId String
+  themeId     String?
+  status      String   // idle, running, held_for_review, completed, failed
+  phase       Int      @default(0) // 1, 2, 3, etc.
+  error       String?
+  exports     Json?    // Array of exported platform URLs
+  costUsd     Float    @default(0.0)
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  theme       Theme?    @relation(fields: [themeId], references: [id], onDelete: SetNull)
+  costLogs    CostLog[]
+}
+
+model CostLog {
+  id          String   @id @default(uuid())
+  runId       String
+  provider    String   // runway, kling, pika, elevenlabs, etc.
+  calls       Int      @default(1)
+  costUsd     Float
+  createdAt   DateTime @default(now())
+
+  run         VideoRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+}

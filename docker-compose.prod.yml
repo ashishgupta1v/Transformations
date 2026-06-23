@@ -1,0 +1,67 @@
+# docker-compose.prod.yml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: scifi_pipeline
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redisdata:/data
+
+  engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.engine
+    # All provider keys (OPENAI_API_KEY, MUAPI_API_KEY, ELEVENLABS_API_KEY,
+    # ADMIN_API_KEY, OAuth/S3/WhatsApp secrets, etc.) live in .env and were
+    # previously NOT loaded into this container at all — env_file fixes
+    # that. The explicit `environment:` entries below override the
+    # localhost-oriented DATABASE_URL/REDIS_URL from .env with the
+    # in-network service hostnames (env_file values load first, then
+    # environment: wins on key collisions).
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://admin:admin_password@db:5432/scifi_pipeline
+      - REDIS_URL=redis://redis:6379
+      - ADMIN_PORT=3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+      args:
+        # Must match ADMIN_API_KEY in .env, or ThemeBuilder's x-api-key
+        # header won't match and admin/server.js will 401 every request.
+        - NEXT_PUBLIC_ADMIN_API_KEY=${ADMIN_API_KEY}
+    environment:
+      # Server-side only — used by next.config.ts's rewrites() to proxy
+      # /api/* and /output/* to the engine container by service name
+      # (localhost inside this container means "this container", not the
+      # host or the engine container).
+      - ADMIN_API_URL=http://engine:3000
+    ports:
+      - "3001:3001"
+    depends_on:
+      - engine
+
+volumes:
+  pgdata:
+  redisdata:

@@ -27,36 +27,32 @@ async function runCheck(name, fn) {
   }
 }
 
-// ── AI VIDEO/AUDIO SERVICES ──────────────────
-async function checkRunway() {
-  if (!process.env.RUNWAY_API_KEY) throw new Error('RUNWAY_API_KEY not set');
-  await axios.get('https://api.dev.runwayml.com/v1/organization', {
-    headers: {
-      Authorization: `Bearer ${process.env.RUNWAY_API_KEY}`,
-      'X-Runway-Version': '2024-11-06',
-    },
-  });
-}
-
-async function checkKling() {
-  if (!process.env.KLING_API_KEY) throw new Error('KLING_API_KEY not set');
-  // Kling has no lightweight "whoami" endpoint publicly documented —
-  // a missing key is the most common failure mode, so we validate presence.
-}
-
-async function checkPika() {
-  if (!process.env.PIKA_API_KEY) throw new Error('PIKA_API_KEY not set');
+// ── MUAPI.AI (video — all 3 phases + Tier C Aleph — and music score) ──
+// 2026-06 migration: replaces the old separate fal.ai (video) and
+// Suno-reseller (music) checks below — both now go through this one
+// muapi.ai key. muapi has no free "whoami" endpoint that doesn't touch
+// billing, so we hit the prediction-result endpoint for a bogus id — a
+// real key gets a 404 (prediction not found); a missing/invalid key gets
+// a 401/403, which is the failure mode we actually want to catch here.
+async function checkMuapi() {
+  if (!process.env.MUAPI_API_KEY) throw new Error('MUAPI_API_KEY not set');
+  const baseUrl = process.env.MUAPI_BASE_URL || 'https://api.muapi.ai/api/v1';
+  try {
+    await axios.get(`${baseUrl}/predictions/connectivity-check/result`, {
+      headers: { 'x-api-key': process.env.MUAPI_API_KEY },
+    });
+  } catch (error) {
+    if (error.response?.status === 404) return; // key is valid, prediction just doesn't exist
+    throw error;
+  }
 }
 
 async function checkElevenLabs() {
-  if (!process.env.ELEVENLABS_API_KEY) throw new Error('ELEVENLABS_API_KEY not set');
-  await axios.get('https://api.elevenlabs.io/v1/user', {
-    headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY },
-  });
-}
-
-async function checkSuno() {
-  if (!process.env.SUNO_API_KEY) throw new Error('SUNO_API_KEY not set');
+  if (!process.env.FAL_API_KEY) throw new Error('FAL_API_KEY not set (needed for ElevenLabs audio)');
+  // We route ElevenLabs through Fal.ai, so we just verify the Fal key is present.
+  if (!process.env.FAL_API_KEY.includes(':')) {
+    throw new Error('FAL_API_KEY format appears invalid');
+  }
 }
 
 async function checkOpenAI() {
@@ -66,10 +62,19 @@ async function checkOpenAI() {
   });
 }
 
+// Optional — only needed if ENABLE_UPSCALE=true. As of the 2026-06
+// muapi.ai migration, Replicate no longer hosts Tier C continuity (Aleph
+// moved to muapi.ai's runway-aleph-v2v) — this account check is for the
+// optional 4K upscale pass only, so a missing key here doesn't block the
+// pipeline unless upscaling is enabled.
 async function checkReplicate() {
-  if (!process.env.REPLICATE_API_TOKEN) throw new Error('REPLICATE_API_TOKEN not set');
+  // NOTE: the env var is REPLICATE_API_KEY (matching .env.example and
+  // src/video/generator.js) — this check previously read the wrong name
+  // (REPLICATE_API_TOKEN), which meant a correctly configured key would
+  // always report "not set" here even though the pipeline itself worked.
+  if (!process.env.REPLICATE_API_KEY) throw new Error('REPLICATE_API_KEY not set');
   await axios.get('https://api.replicate.com/v1/account', {
-    headers: { Authorization: `Token ${process.env.REPLICATE_API_TOKEN}` },
+    headers: { Authorization: `Token ${process.env.REPLICATE_API_KEY}` },
   });
 }
 
@@ -128,13 +133,10 @@ async function testAllAPIs() {
   console.log(chalk.cyan('\n🔌 TESTING ALL API CONNECTIONS\n'));
 
   console.log(chalk.yellow('Video/Audio Generation:'));
-  await runCheck('Runway Gen-3', checkRunway);
-  await runCheck('Kling AI', checkKling);
-  await runCheck('Pika Labs', checkPika);
-  await runCheck('ElevenLabs', checkElevenLabs);
-  await runCheck('Suno AI', checkSuno);
+  await runCheck('muapi.ai (Kling video + Aleph Tier C + Suno music)', checkMuapi);
+  await runCheck('ElevenLabs (voice/SFX)', checkElevenLabs);
   await runCheck('OpenAI', checkOpenAI);
-  await runCheck('Replicate', checkReplicate);
+  await runCheck('Replicate (optional 4K upscale only)', checkReplicate);
 
   console.log(chalk.yellow('\nStorage:'));
   await runCheck('Oracle Object Storage', checkOracleStorage);

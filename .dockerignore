@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+dashboard/node_modules
+dashboard/.next
+.next
+.git
+.env*
+data/
+output/
+temp/

@@ -1,0 +1,37 @@
+{
+  "id": "cyberpunk-neon-sneaker",
+  "displayName": "Cyberpunk Neon Sneaker",
+  "subjectType": "product",
+  "tagline": "The Future of Footwear: A Neon Dream",
+  "phases": {
+    "phase1": {
+      "name": "Baseline",
+      "prompt": "A close-up shot of a glowing neon sneaker hovering effortlessly above a rain-soaked, bustling street in a futuristic Neo-Tokyo. The vibrant colors of the neon signs reflect on the sleek, impenetrable surface of the sneaker. The scene captures the eclectic blend of tradition and modernity, with towering skyscrapers in the background mingling with ancient pagoda silhouettes, all enveloped in a clear, cinematic quality.",
+      "duration": 5
+    },
+    "phase2": {
+      "name": "Transformation",
+      "prompt": "As the neon sneaker hovers, the scene transforms dramatically with a surge of sci-fi energy. Electro-magnetic pulses ripple through the air, causing a wave of shimmering neon cascades, as if the sneaker were channeling a universe of digital energy. The atmospheric pressure shifts, intensifying the rain and enveloping the sneaker in a radiant aura that pulses rhythmically like a beating heart.",
+      "duration": 5
+    },
+    "phase3": {
+      "name": "Resolution",
+      "prompt": "The final transformation unveils the sneaker as an object of pure futuristic art. Hovering above the rain-slicked streets, it emanates a powerful luminescence, drawing the eyes of bystanders who pause to marvel at its impossible design. The city skyline in the background accentuates this moment of awe, with the sneaker casting radiant patterns of light across the urban landscape.",
+      "duration": 5
+    }
+  },
+  "audio": {
+    "ambientPrompt": "The distant sounds of bustling city life mixed with the gentle patter of rain, creating a tranquil yet dynamic urban atmosphere.",
+    "transformationPrompt": "A crescendo of synthetic pulses and electric hums, as if technology itself is alive, echoed by the distant rumble of thunder and the sharp crackle of high-voltage energy.",
+    "musicScorePrompt": "A progressive, futuristic instrumental track with a blend of synthwave and orchestral elements, gracefully transitioning from mysterious undertones to a triumphant, uplifting climax."
+  },
+  "platforms": {
+    "instagramReel": {
+      "caption": "Witness the future of footwear. Step into the neon dream. ⚡️👟 #NeoTokyo #CyberpunkSneaker #FuturisticFashion"
+    },
+    "youtube": {
+      "title": "Experience the Cyberpunk Revolution: The Neon Sneaker",
+      "description": "Dive into a mesmerizing visual journey where futuristic fashion meets electric dreams. Explore the transformation of a neon sneaker against the backdrop of a rainy Neo-Tokyo. See every detail and feel the energy. Subscribe for more futuristic unveilings."
+    }
+  }
+}

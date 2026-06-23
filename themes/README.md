@@ -46,8 +46,9 @@ gitignored).
 | `tagline` | string | Appended to WhatsApp notification templates |
 | `author` | string | Shown in generated descriptions/banners |
 | `bannerTitle` | string | CLI startup banner text |
-| `baseImageUrl` | string | Starting image fed to the phase-1 video provider (Runway). Can be overridden per-deployment with the `BASE_IMAGE_URL_OVERRIDE` env var without editing the theme file |
-| `phases.phase1/phase2/phase3` | object | `src/video/generator.js` — each needs `name`, `duration` (seconds), `provider`, `prompt`, `negativePrompt` |
+| `baseImageUrl` | string | Starting image fed to the phase-1 video provider (fal.ai). Can be overridden per-deployment with the `BASE_IMAGE_URL_OVERRIDE` env var, or per-run — see "Supplying your own inputs" below |
+| `targetImageUrl` | string, optional | Reference/target image Tier C's Aleph transform (`CONTINUITY_TIER=C`) aims toward. No effect on Tier A/B |
+| `phases.phase1/phase2/phase3` | object | `src/video/generator.js` — each needs `name`, `duration` (seconds, **must sum to `config.assembly.totalDuration`**, 15s default), `provider`, `prompt`, `negativePrompt`. Any phase may also set `imageUrl` (different starting frame). `phase2` may additionally set `referenceImageUrl` (overrides `targetImageUrl` for this phase, Tier C only) and `videoInputUrl` (source video fed to Aleph instead of phase1's real output, Tier C only) |
 | `audio.ambient/transformation/music` | object | `src/audio/generator.js` — each needs `prompt`, `duration`, `volume`; `ambient`/`transformation` also take `promptInfluence` (ElevenLabs sound-generation strength, 0–1); `music` also takes `instrumental` (boolean, passed to Suno) |
 | `overlay` | object | `src/assembly/assembler.js` — `primaryText`/`secondaryText` drawn as on-screen text, `startTime`/`endTime`/`fadeIn`/`fadeOut` in seconds |
 | `platforms.youtube` | object | `title`, `description`, `tags`, `categoryId`, `privacy`, `defaultLanguage` |
@@ -62,6 +63,44 @@ Technical/engine fields that stay OUT of theme files (they live in
 `config/pipeline.config.js` instead): FFmpeg encode params, platform
 resolution/bitrate/format/filename/cropFilter, retry/polling tuning, cost
 estimates, budget tiers, Oracle storage connection config.
+
+## Supplying your own inputs (images, themes, backgrounds, products, videos)
+
+You don't have to edit a theme file to swap in your own images/video for a
+single run. Both the CLI and the admin API accept the same set of
+overrides, layered on top of (not replacing) whatever the theme file
+already specifies:
+
+```bash
+node src/index.js generate --theme example-product-launch \
+  --base-image https://your-storage/my-product.png \
+  --target-image https://your-storage/my-target-look.png
+```
+
+or via the admin API (`POST /api/pipeline/start`):
+
+```json
+{
+  "theme": "example-product-launch",
+  "baseImageUrl": "https://...",
+  "targetImageUrl": "https://...",
+  "phase1ImageUrl": "https://...",
+  "phase2ImageUrl": "https://...",
+  "phase3ImageUrl": "https://...",
+  "phase2VideoInputUrl": "https://...",
+  "phase2ReferenceImageUrl": "https://..."
+}
+```
+
+If you have a local file (not yet hosted anywhere), upload it first via
+`POST /api/assets/upload` (`{ filename, base64 }`) — it returns a presigned
+Oracle Object Storage URL you can then drop into any of the fields above.
+
+This is also how you'd point the pipeline at an entirely different
+background, product shot, or location photo without touching `themes/*.json`
+at all — useful for one-off runs or testing a variation before committing it
+to a theme file. `phase2VideoInputUrl`/`phase2ReferenceImageUrl` only affect
+anything when `CONTINUITY_TIER=C` (Aleph video-to-video) is active.
 
 ## Included examples
 

@@ -1,5 +1,7 @@
 {
   "_comment": "Copy this file to themes/<your-theme-id>.json and fill in every field below. JSON has no comment syntax, so this _comment key is ignored by themeLoader.js — leave it or delete it, your choice. See themes/README.md for the full field reference.",
+  "_comment_provider": "All 3 phases run as image-to-video generations on fal.ai (budget swap, 2026-06). Each phase defaults to using baseImageUrl as its starting frame; add an optional 'imageUrl' field inside any phase object to give it a different reference image instead (e.g. a more 'transformed' still for phase2/phase3).",
+  "_comment_continuity": "Option B (2026-06): with CONTINUITY_TIER=C in .env, phase2 is instead a true video-to-video Replicate Aleph transform of phase1's actual rendered output (not a fresh fal.ai generation) — see config.continuity in config/pipeline.config.js. Durations below MUST sum to config.assembly.totalDuration (15s default: 5+5+5). An optional top-level 'targetImageUrl' and per-phase 'referenceImageUrl'/'videoInputUrl' fields (see below) let you anchor that Tier C transform to a specific look, instead of editing this file every run — those are also overridable per-run without touching this file at all, via CLI flags or the admin API (see README).",
 
   "id": "your-theme-id",
   "displayName": "Human-readable name shown in banners, notifications, and the admin UI",
@@ -9,26 +11,29 @@
   "author": "Your name or studio",
   "bannerTitle": "SHORT ALL-CAPS TITLE FOR THE CLI BANNER",
   "baseImageUrl": "https://your-storage-bucket.example.com/base-image.png",
+  "targetImageUrl": "(optional) https://... — reference/target image Tier C's Aleph transform should aim toward. Omit if not using Tier C, or if you'd rather just describe the look in phase2.prompt.",
 
   "phases": {
     "phase1": {
       "name": "Phase 1 — Baseline",
       "duration": 5,
-      "provider": "runway",
+      "provider": "fal",
       "prompt": "Describe the starting scene in vivid, specific visual detail for the video generation model.",
       "negativePrompt": "blur, cartoon, low quality"
     },
     "phase2": {
       "name": "Phase 2 — Transformation",
-      "duration": 10,
-      "provider": "kling",
-      "prompt": "Describe the transformation/twist that happens to the subject from phase 1.",
-      "negativePrompt": "distorted, cartoon, low quality, morphing artifacts"
+      "duration": 5,
+      "provider": "fal",
+      "prompt": "Describe the transformation/twist that happens to the subject from phase 1. Doubles as the Aleph transform prompt when CONTINUITY_TIER=C.",
+      "negativePrompt": "distorted, cartoon, low quality, morphing artifacts",
+      "referenceImageUrl": "(optional, Tier C only) https://... — overrides targetImageUrl specifically for this phase's Aleph call",
+      "videoInputUrl": "(optional, Tier C only) https://... — source video fed into Aleph instead of phase1's real rendered output"
     },
     "phase3": {
       "name": "Phase 3 — Resolution",
       "duration": 5,
-      "provider": "pika",
+      "provider": "fal",
       "prompt": "Describe how the scene resolves or returns to its baseline state.",
       "negativePrompt": "abrupt, jarring, low quality"
     }
@@ -70,7 +75,7 @@
   "platforms": {
     "youtube": {
       "title": "YouTube video title",
-      "description": "Full YouTube description, including hashtags. Use \\n for line breaks.",
+      "description": "Full YouTube description, including hashtags. Use \n for line breaks.",
       "tags": ["tag1", "tag2", "tag3"],
       "categoryId": "22",
       "privacy": "public",

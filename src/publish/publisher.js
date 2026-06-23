@@ -14,7 +14,6 @@ const config = require('../../config/pipeline.config');
 const { withRetry, sleep } = require('../utils/retry');
 const storage = require('../utils/storage');
 const { getAuthenticatedClient } = require('../utils/youtubeAuth');
-const whatsapp = require('../notify/whatsapp');
 
 class Publisher {
   constructor(theme) {
@@ -39,11 +38,10 @@ class Publisher {
       this.publishYouTubeShorts(exports.shorts),
       this.publishTwitter(exports.twitter),
       this.publishFacebook(exports.facebook),
-      this.notifyWhatsAppStatus(exports.whatsapp),
     ]);
 
     const output = {};
-    const platforms = ['youtube', 'instagram', 'shorts', 'twitter', 'facebook', 'whatsapp'];
+    const platforms = ['youtube', 'instagram', 'shorts', 'twitter', 'facebook'];
 
     results.forEach((result, i) => {
       if (result.status === 'fulfilled') {
@@ -239,19 +237,6 @@ class Publisher {
 
     logger.info('Facebook published', { id: response.data.id });
     return { id: response.data.id };
-  }
-
-  // ── WHATSAPP NOTIFICATION (best-effort "status") ──
-  // Meta's WhatsApp Cloud API has no public "post to Status" endpoint, so
-  // this sends a notification message with the export summary instead of
-  // a true Status post. Message text comes from theme.notifications.whatsappLive.
-  async notifyWhatsAppStatus(exportData) {
-    if (!exportData?.path) {
-      logger.debug('No WhatsApp export file, skipping notification');
-      return { skipped: true };
-    }
-    await whatsapp.notifyLive({ theme: this.theme, path: exportData.path });
-    return { notified: true };
   }
 
   // ── HELPERS ──────────────────────────────

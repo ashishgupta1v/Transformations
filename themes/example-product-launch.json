@@ -12,21 +12,21 @@
     "phase1": {
       "name": "Studio Baseline",
       "duration": 5,
-      "provider": "runway",
+      "provider": "fal",
       "prompt": "Clean studio product shot, single white sneaker rotating slowly on a reflective black pedestal, soft rim lighting, minimal background, premium commercial photography, 24fps, ultra-realistic, shallow depth of field",
       "negativePrompt": "blur, cartoon, low quality, cluttered background"
     },
     "phase2": {
       "name": "Tech Transformation",
-      "duration": 10,
-      "provider": "kling",
+      "duration": 5,
+      "provider": "fal",
       "prompt": "PRODUCT TECH TRANSFORMATION: sneaker surface dissolves into glowing circuit-board patterns, sole splits open revealing pulsing blue energy core, laces become fiber-optic strands of light, holographic specs and stats orbit the shoe, particle effects burst outward, camera pushes in dramatically, cinematic commercial sci-fi epic",
       "negativePrompt": "ugly, distorted, cartoon, low quality, morphing artifacts"
     },
     "phase3": {
       "name": "Hero Reveal",
       "duration": 5,
-      "provider": "pika",
+      "provider": "fal",
       "prompt": "Energy settles back into the shoe leaving a subtle glowing trim, camera pulls back to a wide hero shot, logo and tagline fade in cleanly, premium studio lighting returns, confident final product reveal",
       "negativePrompt": "abrupt, jarring, low quality"
     }
