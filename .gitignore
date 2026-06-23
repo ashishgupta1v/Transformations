@@ -18,9 +18,12 @@ logs/
 npm-debug.log*
 
 # Cost & run-state data (kept locally, not versioned)
-data/cost-log.json
-data/runs/
-data/.cache/
+data/
+
+# Temporary scratchpad & sandbox files
+scratch/
+scratch*.js
+test.txt
 
 # n8n local data
 n8n/.n8n/
